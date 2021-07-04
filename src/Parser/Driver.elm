@@ -18,7 +18,7 @@ packet =
     }
 
 
-parseLoop : Int -> String -> TextCursor Element
+parseLoop : Int -> String -> TextCursor
 parseLoop generation str =
     Loop.parseLoop packet generation str
 

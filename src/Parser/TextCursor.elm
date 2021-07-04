@@ -22,7 +22,7 @@ original text. It is used to properly construct Expressions, which contain
 as a component a SourceMap, which locates the bite of text in the original input
 text.
 -}
-type alias TextCursor a =
+type alias TextCursor =
     { count : Int
     , generation : Int
     , offset : Int
@@ -30,8 +30,8 @@ type alias TextCursor a =
     --
     , source : String
     , text : String
-    , parsed : List a
-    , stack : List (StackItem a)
+    , parsed : List Element
+    , stack : List StackItem
     }
 
 
@@ -51,12 +51,12 @@ type ErrorStatus
     | UnhandledError
 
 
-parseResult : TextCursor a -> List a
+parseResult : TextCursor -> List Element
 parseResult t =
     t.parsed
 
 
-empty : TextCursor a
+empty : TextCursor
 empty =
     { count = 0
     , generation = 0
@@ -72,7 +72,7 @@ empty =
 
 {-| Return a TextCursor with given chunkNumber and text
 -}
-init : Int -> String -> TextCursor a
+init : Int -> String -> TextCursor
 init generation source =
     { count = 0
     , generation = generation
@@ -85,11 +85,11 @@ init generation source =
     , stack = []
     }
 
-type alias StackItem a = {expect : Expectation, preceding : List a, count : Int}
+type alias StackItem = {expect : Expectation, preceding : List Element, count : Int}
 
 type alias Expectation = { begin : Char, end : Char }
 
-add : String -> TextCursor a -> TextCursor a
+add : String -> TextCursor -> TextCursor
 add str tc = 
   let
       _ =  Debug.log "!"  "ADD"
@@ -99,7 +99,7 @@ add str tc =
         , offset = tc.offset + String.length str
         } 
 
-push : (String -> a) -> Expectation -> TextCursor a -> TextCursor a
+push : (String -> Element) -> Expectation -> TextCursor -> TextCursor
 push parse expectation tc =
   let
       _ =  Debug.log "!"  "PUSH"
@@ -123,7 +123,7 @@ push parse expectation tc =
         , text = ""
         }
 
-pop : (String -> a) -> TextCursor a -> TextCursor a
+pop : (String -> Element) -> TextCursor -> TextCursor
 pop parse tc = 
   let
       _ = Debug.log  "!" "POP"
@@ -131,15 +131,29 @@ pop parse tc =
   case List.head tc.stack of 
     Nothing -> tc
     Just item ->
-      let
-        
-          newParsed = (String.fromChar item.expect.begin )
-                     ++ tc.text 
-                     ++ (String.fromChar item.expect.end)
-                     |> parse
-      in 
-        {tc | offset = tc.offset + 1
-        , parsed = newParsed :: item.preceding ++ tc.parsed
-        , stack = List.drop 1 tc.stack
-        , text = ""
-        }
+        if tc.text /= "" then
+            let
+                newParsed = (String.fromChar item.expect.begin )
+                            ++ tc.text 
+                            ++ (String.fromChar item.expect.end)
+                            |> parse
+            in 
+                {tc | offset = tc.offset + 1
+                , count = tc.count + 1
+                , parsed = newParsed :: item.preceding ++ tc.parsed
+                , stack = List.drop 1 tc.stack
+                , text = ""
+                }
+        else
+          case tc.parsed of 
+            (first::next::rest) ->
+              case next of 
+                AST.Raw txt _ ->
+                  {tc | parsed = Element (AST.Name txt)[] first Parser.MetaData.dummy::item.preceding ++  rest
+                        , offset = tc.offset + 1
+                        , count = tc.count + 1
+                        , stack = List.drop 1 tc.stack
+                        , text = "" }
+                _ -> {tc | offset = tc.offset + 1, count = tc.count + 1}
+            _ -> {tc | offset = tc.offset + 1, count = tc.count + 1}
+               

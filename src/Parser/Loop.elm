@@ -14,7 +14,7 @@ type alias Parser a =
 type alias Packet a =
     { parser : String ->  a
     , getLength : a -> Int
-    , handleError : Maybe (List (Parser.DeadEnd Context Problem) -> TextCursor a -> TextCursor a)
+    , handleError : Maybe (List (Parser.DeadEnd Context Problem) -> TextCursor -> TextCursor)
     }
 
 
@@ -22,7 +22,7 @@ type alias Packet a =
 a string of source text, the "chunk." It returns a TextCursor, which
 is a data structure which includes the parsed source text.
 -}
-parseLoop : Packet Element -> Int -> String -> TextCursor Element
+parseLoop : Packet Element -> Int -> String -> TextCursor
 parseLoop packet generation str =
     Parser.Tool.loop (TextCursor.init generation str) (nextCursor packet)
 
@@ -50,14 +50,14 @@ operated by parseLoop is updated:
     - `expr` is prepended to `tc.parsed`
 
 -}
-nextCursor : Packet Element -> TextCursor Element -> Parser.Tool.Step (TextCursor Element) (TextCursor Element)
+nextCursor : Packet Element -> TextCursor -> Parser.Tool.Step (TextCursor) (TextCursor)
 nextCursor packet tc =
     let
         p = tc.parsed |> List.map AST.simplify
         _ = Debug.log ("TC "  ++ String.fromInt tc.count) {p = p, s = tc.stack |> List.map simplifyStackItem, t = tc.text}
         _ = Debug.log "-" "-------------------------------------------------"
     in
-    if tc.offset >= tc.length || tc.count > 10 then
+    if tc.offset >= tc.length || tc.count > 20 then
         -- TODO: that usage of count needs to be removed after bug is fixed
         Parser.Tool.Done { tc | parsed = List.reverse tc.parsed }
 
