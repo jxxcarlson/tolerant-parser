@@ -129,7 +129,7 @@ pop parse tc =
       _ = Debug.log  "!" "POP"
   in
   case List.head tc.stack of 
-    Nothing -> tc
+    Nothing -> {tc | count = tc.count + 1, offset = tc.offset + 1}
     Just item ->
         if tc.text /= "" then
             let
