@@ -85,7 +85,7 @@ init generation source =
     , stack = []
     }
 
-type alias StackItem a = {expect : Expectation, preceding : List a}
+type alias StackItem a = {expect : Expectation, preceding : List a, count : Int}
 
 type alias Expectation = { begin : Char, end : Char }
 
@@ -107,17 +107,18 @@ push parse expectation tc =
   if tc.text == "" then 
     {tc | count = tc.count + 1
         , offset = tc.offset + 1
-        , stack = {expect = expectation, preceding = tc.parsed}::tc.stack
+        , stack = {expect = expectation, preceding = tc.parsed, count = tc.count}::tc.stack
         , parsed = []
         , text = ""
         }
   else
     let
       el = parse tc.text
+      
     in
     {tc | count = tc.count + 1
         , offset = tc.offset + 1
-        , stack = {expect = expectation, preceding = (el)::tc.parsed}::tc.stack
+        , stack = {expect = expectation, preceding = (el)::tc.parsed, count = tc.count}::tc.stack
         , parsed = []
         , text = ""
         }

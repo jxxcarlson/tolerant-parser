@@ -54,7 +54,7 @@ nextCursor : Packet Element -> TextCursor Element -> Parser.Tool.Step (TextCurso
 nextCursor packet tc =
     let
         p = tc.parsed |> List.map AST.simplify
-        _ = Debug.log ("TC "  ++ String.fromInt tc.count) {p = p, s = tc.stack, t = tc.text}
+        _ = Debug.log ("TC "  ++ String.fromInt tc.count) {p = p, s = tc.stack |> List.map simplifyStackItem, t = tc.text}
         _ = Debug.log "-" "-------------------------------------------------"
     in
     if tc.offset >= tc.length || tc.count > 10 then
@@ -84,7 +84,8 @@ nextCursor packet tc =
                 Parser.Tool.Done tc
    
 
-
+simplifyStackItem si =
+ {pr = si.preceding |> List.map AST.simplify, count = si.count }
 
 -- advance = Parser.Tool.text (\c -> c /= '.') (\c -> c /= '.' ) 
 
