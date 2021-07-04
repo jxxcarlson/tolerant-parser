@@ -52,14 +52,11 @@ operated by parseLoop is updated:
 -}
 nextCursor : Packet Element -> TextCursor Element -> Parser.Tool.Step (TextCursor Element) (TextCursor Element)
 nextCursor packet tc =
-    -- let
-    --     _ = Debug.log "-" "-"
-    --     _ = Debug.log (String.fromInt (tc.count + 1)) "-----------------------------"
-
-    --     _ =
-    --         Debug.log "(N, p, text)" ( tc.count, tc.offset, String.dropLeft tc.offset tc.text )
-    --     _ = Debug.log "TC" tc
-    -- in
+    let
+        p = tc.parsed |> List.map AST.simplify
+        _ = Debug.log ("TC "  ++ String.fromInt tc.count) {p = p, s = tc.stack, t = tc.text}
+        _ = Debug.log "-" "-------------------------------------------------"
+    in
     if tc.offset >= tc.length || tc.count > 10 then
         -- TODO: that usage of count needs to be removed after bug is fixed
         Parser.Tool.Done { tc | parsed = List.reverse tc.parsed }
@@ -79,7 +76,7 @@ nextCursor packet tc =
             Nothing -> Parser.Tool.Done tc
             Just c -> 
               if c == '[' then
-                Parser.Tool.Loop <| TextCursor.push packet.parser {start = '[', finish = ']'} tc  
+                Parser.Tool.Loop <| TextCursor.push packet.parser {begin = '[', end = ']'} tc  
               else if c == ']' then 
                 Parser.Tool.Loop <| TextCursor.pop packet.parser tc  
               else                                                                                                 
