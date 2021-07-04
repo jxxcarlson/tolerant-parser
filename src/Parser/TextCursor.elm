@@ -1,5 +1,5 @@
 module Parser.TextCursor exposing
-    ( TextCursor, init
+    ( TextCursor, init, add, push
     , ErrorStatus(..), ParseError, empty, parseResult
     )
 
@@ -10,6 +10,7 @@ module Parser.TextCursor exposing
 -}
 
 import Parser.AST as AST exposing (Element)
+import Html exposing (a)
 
 
 {-| SourceText structure used by Parser.Loop.run as it progressively "eats" bites of
@@ -22,11 +23,13 @@ text.
 type alias TextCursor a =
     { count : Int
     , generation : Int
-    , text : String
     , offset : Int
     , length : Int
+    --
+    , source : String
+    , text : String
     , parsed : List a
-    , stack : List a
+    , stack : List StackItem
     }
 
 
@@ -57,6 +60,8 @@ empty =
     , generation = 0
     , offset = 0
     , length = 0
+    --
+    , source = ""
     , text = ""
     , parsed = []
     , stack = []
@@ -66,12 +71,51 @@ empty =
 {-| Return a TextCursor with given chunkNumber and text
 -}
 init : Int -> String -> TextCursor a
-init generation text =
+init generation source =
     { count = 0
     , generation = generation
-    , text = text
     , offset = 0
-    , length = String.length text
+    , length = String.length source
+    --
+    , source = source
+    , text = ""
     , parsed = []
     , stack = []
     }
+
+type alias StackItem = {expect : Expectation, preceding : List String}
+
+type alias Expectation = { start : Char, finish : Char }
+
+add : String -> TextCursor a -> TextCursor a
+add str tc =
+  let
+      _ = Debug.log "action" "ADD"
+  in
+  {tc | count = tc.count + 1
+        , text = str 
+        , offset = tc.offset + String.length str
+        }
+
+push : (String -> a) -> Expectation -> TextCursor a -> TextCursor a
+push parse expectation tc =
+  let
+      _ = Debug.log "action" "PUSH"
+  in
+  
+  {tc | count = tc.count + 1
+       , offset = tc.offset + 1
+       , stack = {expect = expectation, preceding = [tc.text]}::tc.stack
+       , parsed = parse tc.text :: tc.parsed
+       , text = ""
+       }
+
+-- pop : TextCursor a -> TextCursor a
+-- pop tc = 
+--   let
+      
+
+--   in
+  
+--   {tc | offset = tc.offset + 1
+--   , parsed = }

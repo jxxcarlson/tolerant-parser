@@ -12,7 +12,7 @@ import Parser.TextCursor as TextCursor exposing (ErrorStatus(..), TextCursor)
 -}
 packet : Loop.Packet Element
 packet =
-    { parser = Parser.parser
+    { parser = \str -> Parser.parse 0 str
     , getLength = AST.length
     , handleError = Nothing
     }

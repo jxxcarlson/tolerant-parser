@@ -144,11 +144,11 @@ recognizes lines that start with an alphabetic character.
 
 -}
 text : (Char -> Bool) -> (Char -> Bool) -> Parser { start : Int, finish : Int, content : String }
-text prefixTest predicate =
+text prefix continue =
     Parser.succeed (\start finish content -> { start = start, finish = finish, content = String.slice start finish content })
         |= Parser.getOffset
-        |. Parser.chompIf (\c -> prefixTest c) (UnHandledError 2)
-        |. Parser.chompWhile (\c -> predicate c)
+        |. Parser.chompIf (\c -> prefix c) (UnHandledError 2)
+        |. Parser.chompWhile (\c -> continue c)
         |= Parser.getOffset
         |= Parser.getSource
 

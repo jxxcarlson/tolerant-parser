@@ -1,4 +1,4 @@
-module Parser.Loop exposing (Packet, parseLoop)
+module Parser.Loop exposing (Packet, parseLoop, advance)
 
 import Parser.AST as AST exposing (Element)
 import Parser.Advanced as Parser exposing ((|.), (|=))
@@ -12,7 +12,7 @@ type alias Parser a =
 
 
 type alias Packet a =
-    { parser : Int -> Parser a
+    { parser : String ->  a
     , getLength : a -> Int
     , handleError : Maybe (List (Parser.DeadEnd Context Problem) -> TextCursor a -> TextCursor a)
     }
@@ -55,39 +55,42 @@ nextCursor packet tc =
     let
         _ =
             Debug.log "(N, p, text)" ( tc.count, tc.offset, String.dropLeft tc.offset tc.text )
+        _ = Debug.log "TC" tc
+        _ = Debug.log (String.fromInt (tc.count + 1)) "-----------------------------"
     in
     if tc.offset >= tc.length || tc.count > 10 then
         -- TODO: that usage of count needs to be removed after bug is fixed
         Parser.Tool.Done { tc | parsed = List.reverse tc.parsed }
 
     else
-        let
-            input =
-                String.dropLeft tc.offset tc.text
-        in
-        case Parser.run (packet.parser tc.generation) input of
-            Ok expr ->
-                Parser.Tool.Loop
-                    { tc
-                        | count = tc.count + 1
-                        , offset = tc.offset + packet.getLength expr
-                        , parsed = expr :: tc.parsed
-                    }
+      let
+         remaining = String.dropLeft tc.offset tc.source
+         chompedText = advance remaining |> Debug.log "CHOMPED"
+         n = chompedText.finish - chompedText.start |> Debug.log "N"
+         firstChar = String.uncons remaining |> Maybe.map Tuple.first
+         
+       in
+       if n > 0 then
+         Parser.Tool.Loop <| TextCursor.add chompedText.content tc
+       else
+         case firstChar of
+            Nothing -> Parser.Tool.Done tc
+            Just c -> 
+              if c == '[' then
+                Parser.Tool.Loop <| TextCursor.push packet.parser {start = '[', finish = ']'} tc  
+              else 
+                -- Parser.Tool.Loop <| TextCursor.pop tc 
+                Parser.Tool.Done tc
+   
 
-            Err e ->
-                let
-                    col =
-                        List.head e |> Maybe.map .col |> Maybe.withDefault 0
 
-                    errorElement =
-                        AST.Problem e (String.left col input)
 
-                    _ =
-                        Debug.log "Error col" col
-                in
-                case packet.handleError of
-                    Nothing ->
-                        Parser.Tool.Loop { tc | count = tc.count + 1, offset = tc.offset + col, parsed = errorElement :: tc.parsed }
+-- advance = Parser.Tool.text (\c -> c /= '.') (\c -> c /= '.' ) 
 
-                    Just he ->
-                        Parser.Tool.Loop (he e tc)
+
+notDelimiter c = not (List.member c ['[', ']'])
+advance str = 
+  case Parser.run (Parser.Tool.text (\c -> notDelimiter c) (\c -> notDelimiter c )) str of
+     Ok stringData -> stringData
+     Err _ ->  {content = "", finish = 0, start = 0}
+
