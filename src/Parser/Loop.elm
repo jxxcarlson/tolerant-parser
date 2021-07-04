@@ -52,12 +52,14 @@ operated by parseLoop is updated:
 -}
 nextCursor : Packet Element -> TextCursor Element -> Parser.Tool.Step (TextCursor Element) (TextCursor Element)
 nextCursor packet tc =
-    let
-        _ =
-            Debug.log "(N, p, text)" ( tc.count, tc.offset, String.dropLeft tc.offset tc.text )
-        _ = Debug.log "TC" tc
-        _ = Debug.log (String.fromInt (tc.count + 1)) "-----------------------------"
-    in
+    -- let
+    --     _ = Debug.log "-" "-"
+    --     _ = Debug.log (String.fromInt (tc.count + 1)) "-----------------------------"
+
+    --     _ =
+    --         Debug.log "(N, p, text)" ( tc.count, tc.offset, String.dropLeft tc.offset tc.text )
+    --     _ = Debug.log "TC" tc
+    -- in
     if tc.offset >= tc.length || tc.count > 10 then
         -- TODO: that usage of count needs to be removed after bug is fixed
         Parser.Tool.Done { tc | parsed = List.reverse tc.parsed }
@@ -65,8 +67,8 @@ nextCursor packet tc =
     else
       let
          remaining = String.dropLeft tc.offset tc.source
-         chompedText = advance remaining |> Debug.log "CHOMPED"
-         n = chompedText.finish - chompedText.start |> Debug.log "N"
+         chompedText = advance remaining 
+         n = chompedText.finish - chompedText.start
          firstChar = String.uncons remaining |> Maybe.map Tuple.first
          
        in
@@ -78,7 +80,9 @@ nextCursor packet tc =
             Just c -> 
               if c == '[' then
                 Parser.Tool.Loop <| TextCursor.push packet.parser {start = '[', finish = ']'} tc  
-              else 
+              else if c == ']' then 
+                Parser.Tool.Loop <| TextCursor.pop packet.parser tc  
+              else                                                                                                 
                 -- Parser.Tool.Loop <| TextCursor.pop tc 
                 Parser.Tool.Done tc
    

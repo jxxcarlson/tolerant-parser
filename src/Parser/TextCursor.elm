@@ -1,5 +1,5 @@
 module Parser.TextCursor exposing
-    ( TextCursor, init, add, push
+    ( TextCursor, init, add, push, pop
     , ErrorStatus(..), ParseError, empty, parseResult
     )
 
@@ -88,34 +88,34 @@ type alias StackItem = {expect : Expectation, preceding : List String}
 type alias Expectation = { start : Char, finish : Char }
 
 add : String -> TextCursor a -> TextCursor a
-add str tc =
-  let
-      _ = Debug.log "action" "ADD"
-  in
-  {tc | count = tc.count + 1
+add str tc = 
+  ({tc | count = tc.count + 1
         , text = str 
         , offset = tc.offset + String.length str
-        }
+        }) |> Debug.log "ADD" 
 
 push : (String -> a) -> Expectation -> TextCursor a -> TextCursor a
 push parse expectation tc =
-  let
-      _ = Debug.log "action" "PUSH"
-  in
-  
-  {tc | count = tc.count + 1
+  ({tc | count = tc.count + 1
        , offset = tc.offset + 1
        , stack = {expect = expectation, preceding = [tc.text]}::tc.stack
        , parsed = parse tc.text :: tc.parsed
        , text = ""
-       }
+       }) |> Debug.log "PUSH" 
 
--- pop : TextCursor a -> TextCursor a
--- pop tc = 
---   let
-      
-
---   in
-  
---   {tc | offset = tc.offset + 1
---   , parsed = }
+pop : (String -> a) -> TextCursor a -> TextCursor a
+pop parse tc = 
+  (case List.head tc.stack of 
+    Nothing -> tc
+    Just item ->
+      let
+          
+          newParsed = (String.fromChar item.expect.start )
+                     ++ tc.text 
+                     ++ (String.fromChar item.expect.finish)
+                     |> parse
+      in 
+        {tc | offset = tc.offset + 1
+        , parsed = newParsed :: tc.parsed
+        , stack = List.drop 1 tc.stack
+        , text = ""}) |> Debug.log "POP"
