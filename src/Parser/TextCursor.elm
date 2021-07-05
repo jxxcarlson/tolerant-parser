@@ -1,5 +1,5 @@
 module Parser.TextCursor exposing
-    ( TextCursor, init, add, push, pop
+    ( TextCursor, init, add, push, pop, commit
     , ErrorStatus(..), ParseError, empty, parseResult
     )
 
@@ -13,6 +13,7 @@ import Parser.AST as AST exposing (Element(..))
 import Html exposing (a)
 import Parser.Loc exposing (end)
 import Parser.MetaData exposing (MetaData)
+import Parser.AST exposing (simplify)
 
 
 {-| SourceText structure used by Parser.Loop.run as it progressively "eats" bites of
@@ -157,3 +158,40 @@ pop parse tc =
                 _ -> {tc | offset = tc.offset + 1, count = tc.count + 1}
             _ -> {tc | offset = tc.offset + 1, count = tc.count + 1}
                
+
+
+commit :  TextCursor -> List Element
+commit tc =
+    let
+        _ = Debug.log "!" "COMMIT"
+
+        parsed =
+            if tc.text == "" then
+                tc.parsed 
+
+            else
+                (AST.Raw tc.text Parser.MetaData.dummy):: (List.reverse tc.parsed)
+
+    in
+    case tc.stack of
+        [] ->
+            List.reverse parsed
+
+        top :: restOfStack ->
+            let
+                -- problem =
+                --     Problem.AnnotationDoesNotFinish
+                --         { startMark = startMark
+                --         , expectedEndMark = expectedEndMark
+                --         , end = position offset end
+                --         }
+
+                newParsed =
+                    AST.Incomplete :: parsed  ++ top.preceding 
+            in
+            commit { tc | text = "", stack = restOfStack, parsed = newParsed }
+
+
+-- type alias StackItem = {expect : Expectation, preceding : List Element, count : Int}
+
+-- type alias Expectation = { begin : Char, end : Char }

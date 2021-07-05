@@ -32,7 +32,8 @@ pl str =
         _ =
             Debug.log "FINAL OFFSET" tc.offset
     in
-    tc |> .parsed |> List.map AST.simplify
+    --tc |> .parsed |> List.map AST.simplify
+    tc |> TextCursor.commit |> List.map AST.simplify
 
 
 
