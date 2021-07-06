@@ -5,6 +5,7 @@ import Parser.Advanced as Parser exposing ((|.), (|=))
 import Parser.Error exposing (Context, Problem)
 import Parser.TextCursor as TextCursor exposing (TextCursor)
 import Parser.Tool
+import Parser.AST exposing (simplify)
 
 
 type alias Parser a =
@@ -55,8 +56,9 @@ nextCursor : Packet Element -> TextCursor -> Parser.Tool.Step (TextCursor) (Text
 nextCursor packet tc =
     let
         p = tc.parsed |> List.map AST.simplify
+        co  = tc.complete |> List.map AST.simplify
         _ = Debug.log "(count, offset, remaining)" (tc.count, tc.offset, String.dropLeft tc.offset tc.source)
-        _ = Debug.log ("TC "  ++ String.fromInt tc.count) {p = p, s = tc.stack |> List.map simplifyStackItem, t = tc.text}
+        _ = Debug.log ("TC "  ++ String.fromInt tc.count) {p = p, c = co, s = tc.stack |> List.map TextCursor.simpleStackItem, t = tc.text}
         _ = Debug.log "-" "-------------------------------------------------"
     in
     if tc.offset >= tc.length  then
@@ -86,9 +88,6 @@ nextCursor packet tc =
                 Parser.Tool.Done tc
    
 
-simplifyStackItem si =
- {pr = si.preceding |> List.map AST.simplify, count = si.count }
-
 -- advance = Parser.Tool.text (\c -> c /= '.') (\c -> c /= '.' ) 
 
 
@@ -97,4 +96,3 @@ advance str =
   case Parser.run (Parser.Tool.text (\c -> notDelimiter c) (\c -> notDelimiter c )) str of
      Ok stringData -> stringData
      Err _ ->  {content = "", finish = 0, start = 0}
-

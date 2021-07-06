@@ -11,7 +11,7 @@ type Element
     | Element Name (List String) Element MetaData
     | EList (List Element) MetaData
     | Problem (List ParseError) String
-    | Incomplete
+    | Empty
 
 
 length : Element -> Int
@@ -38,7 +38,7 @@ position element =
         Problem _ _ ->
             Loc.dummy
 
-        Incomplete ->
+        Empty ->
             Loc.dummy
 
 
@@ -74,5 +74,5 @@ simplify element =
         Problem p s ->
             Problem_ (List.head p |> Maybe.map .problem |> Maybe.withDefault NoError) s
 
-        Incomplete ->
+        Empty ->
             Incomplete_

@@ -29,13 +29,13 @@ pl str =
         tc =
             parseLoop 0 str
 
-        _ =  tc.parsed |> List.map AST.simplify |> Debug.log "COMMIT"
+        _ =  tc.complete |> List.map AST.simplify |> Debug.log "COMPLETE (PL)"
 
         _ =
             Debug.log "FINAL OFFSET" tc.offset
     in
     --tc |> .parsed |> List.map AST.simplify
-    tc |> .parsed |> List.map AST.simplify
+    tc |> .complete |> List.map AST.simplify
 
 
 

@@ -1,6 +1,6 @@
 module Parser.TextCursor exposing
-    ( TextCursor, init, add, push, pop, commit
-    , ErrorStatus(..), ParseError, empty, parseResult
+    ( TextCursor, init, add, push, pop, commit, simpleStackItem
+    , ErrorStatus(..), ParseError, empty, parseResult, firstWord
     )
 
 {-| TextCursor is the data structure used by Parser.parseLoop.
@@ -32,6 +32,7 @@ type alias TextCursor =
     , source : String
     , text : String
     , parsed : List Element
+    , complete : List Element
     , stack : List StackItem
     }
 
@@ -67,6 +68,7 @@ empty =
     , source = ""
     , text = ""
     , parsed = []
+    , complete = []
     , stack = []
     }
 
@@ -83,10 +85,15 @@ init generation source =
     , source = source
     , text = ""
     , parsed = []
+    , complete = []
     , stack = []
     }
 
-type alias StackItem = {expect : Expectation, preceding : List Element, count : Int}
+type alias StackItem = {expect : Expectation, data : String, count : Int}
+
+
+simpleStackItem : StackItem -> String
+simpleStackItem { data, count } = String.fromInt count ++ ": " ++ data
 
 type alias Expectation = { begin : Char, end : Char }
 
@@ -105,24 +112,38 @@ push parse expectation tc =
   let
       _ =  Debug.log "!"  "PUSH"
   in
-  if tc.text == "" then 
-    {tc | count = tc.count + 1
-        , offset = tc.offset + 1
-        , stack = {expect = expectation, preceding = tc.parsed, count = tc.count}::tc.stack
-        , parsed = []
-        , text = ""
-        }
-  else
-    let
-      el = parse tc.text
-      
-    in
-    {tc | count = tc.count + 1
-        , offset = tc.offset + 1
-        , stack = {expect = expectation, preceding = (el)::tc.parsed, count = tc.count}::tc.stack
-        , parsed = []
-        , text = ""
-        }
+    case tc.stack of 
+        [] -> 
+            let
+                complete = if tc.text /= "" then 
+                    parse tc.text::tc.parsed ++ tc.complete
+                    else 
+                    tc.parsed ++ tc.complete
+                
+                _ = tc.text |> Debug.log "TXT"
+            --  _ = parse tc.text |> Debug.log "PARSED TXT"
+            in
+            
+            {tc | count = tc.count + 1
+                , offset = tc.offset + 1
+                , stack = {expect = expectation, data = tc.text, count = tc.count}::tc.stack
+                , parsed = []
+                , complete = complete |> Debug.log "PUSH, COMPLETE"
+                , text = ""
+                }
+        (first::rest) ->
+            let 
+                first_ = if String.trim tc.text == "" then 
+                           first 
+                         else
+                           {first | data = tc.text }
+                --- ^^ TODO: HACKY!
+                in
+                {tc | count = tc.count + 1
+                    , offset = tc.offset + 1
+                    , stack = {expect = expectation, data = "", count = tc.count}::first_::rest
+                    , text = ""
+                    }
 
 pop : (String -> Element) -> TextCursor -> TextCursor
 pop parse tc = 
@@ -134,29 +155,48 @@ pop parse tc =
     Just item ->
         if tc.text /= "" then
             let
-                newParsed = (String.fromChar item.expect.begin )
+                newParsed = 
+                  (String.fromChar item.expect.begin )
                             ++ tc.text 
                             ++ (String.fromChar item.expect.end)
                             |> parse
+                parsed = newParsed :: tc.parsed
+                stack = List.drop 1 tc.stack
+
             in 
+              if stack == [] then 
                 {tc | offset = tc.offset + 1
                 , count = tc.count + 1
-                , parsed = newParsed :: item.preceding ++ tc.parsed
-                , stack = List.drop 1 tc.stack
+                , parsed = []
+                , stack =  []
+                , complete = parsed ++ tc.complete
                 , text = ""
                 }
-        else
-          case tc.parsed of 
-            (first::next::rest) ->
-              case next of 
-                AST.Raw txt _ ->
-                  {tc | parsed = Element (AST.Name txt)[] first Parser.MetaData.dummy::item.preceding ++  rest
+              else
+                {tc | offset = tc.offset + 1
+                , count = tc.count + 1
+                , parsed = parsed
+                , stack = stack
+                , text = ""
+                }
+
+        else -- tc.text is empty
+            case List.head tc.stack of 
+              Nothing -> {tc | count = tc.count + 1, offset = tc.offset + 1}
+              Just stackItem -> 
+                let
+                    newParsed = Element (AST.Name stackItem.data) 
+                        [] 
+                        (EList (List.reverse tc.parsed) Parser.MetaData.dummy)
+                        Parser.MetaData.dummy
+                in
+                    {tc | parsed = []
+                        , complete = newParsed :: tc.complete
+                        , stack = (List.drop 1 tc.stack)
                         , offset = tc.offset + 1
                         , count = tc.count + 1
-                        , stack = List.drop 1 tc.stack
                         , text = "" }
-                _ -> {tc | offset = tc.offset + 1, count = tc.count + 1}
-            _ -> {tc | offset = tc.offset + 1, count = tc.count + 1}
+
                
 
 
@@ -192,7 +232,7 @@ pop parse tc =
 --                 _ = Debug.log "PARSED" (tc.parsed |> List.map AST.simplify)
 
 --                 newParsed =
---                     AST.Incomplete :: parsed  ++ top.preceding 
+--                     AST.Incomplete :: parsed  ++ top.data 
 --             in
 --             commit { tc | count = 1 + tc.count, text = ""
 --                 , stack = restOfStack
@@ -203,15 +243,12 @@ pop parse tc =
 
 commit :  TextCursor -> TextCursor
 commit tc = 
-  tc |> commit_ |> (\tc2 ->  {tc2 | parsed = List.reverse tc2.parsed })
+  tc |> commit_ |> (\tc2 ->  {tc2 | complete = List.reverse tc2.complete })
 
  
 commit_:  TextCursor -> TextCursor
 commit_ tc =
     let
-
-        
-
         parsed =
             if tc.text == "" then
                  tc.parsed 
@@ -219,12 +256,15 @@ commit_ tc =
             else
                 (AST.Raw tc.text Parser.MetaData.dummy):: ( tc.parsed)
 
-        _ = parsed |> List.map AST.simplify 
+        complete = parsed ++ tc.complete 
+        
+        _ = complete |> List.map simplify |> Debug.log "!! COMPLETE"
+
 
     in
     case tc.stack of
         [] ->
-            {tc | parsed = parsed  } 
+            {tc | parsed = [], complete = complete  } 
 
         top :: restOfStack ->
             let
@@ -241,13 +281,24 @@ commit_ tc =
                 _ = Debug.log "PARSED" (tc.parsed |> List.map AST.simplify)
 
                 newParsed =
-                    AST.Incomplete :: parsed  ++ top.preceding 
+                    AST.Empty :: parsed --- more here
             in
             commit { tc | count = 1 + tc.count, text = ""
                 , stack = restOfStack
-                , parsed = newParsed } 
+                , parsed = newParsed
+                 } 
 
 
--- type alias StackItem = {expect : Expectation, preceding : List Element, count : Int}
+-- type alias StackItem = {expect : Expectation, data : List Element, count : Int}
 
 -- type alias Expectation = { begin : Char, end : Char }
+
+
+firstWord : String -> {first : String, rest: String}
+firstWord str = 
+  let
+    words = String.words str
+  in
+  case words of 
+    [] -> {first = "", rest = ""}
+    a::rest -> {first = a, rest = String.join " " rest}
