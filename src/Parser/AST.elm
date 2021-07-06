@@ -2,7 +2,7 @@ module Parser.AST exposing (Element(..), Element_(..), simplify, Name(..), posit
 
 import Parser.Advanced as Parser
 import Parser.Error exposing (..)
-import Parser.Loc2 as Loc
+import Parser.Loc as Loc
 import Parser.MetaData exposing (MetaData)
 
 

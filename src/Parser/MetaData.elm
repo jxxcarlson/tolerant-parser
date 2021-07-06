@@ -1,6 +1,6 @@
 module Parser.MetaData exposing (..)
 
-import Parser.Loc2 as Loc
+import Parser.Loc as Loc
 
 
 type alias MetaData =

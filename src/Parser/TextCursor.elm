@@ -11,7 +11,6 @@ module Parser.TextCursor exposing
 
 import Parser.AST as AST exposing (Element(..))
 import Html exposing (a)
-import Parser.Loc exposing (end)
 import Parser.MetaData exposing (MetaData)
 import Parser.AST exposing (simplify)
 

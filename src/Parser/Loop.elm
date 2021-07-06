@@ -84,11 +84,8 @@ nextCursor packet tc =
               else if c == ']' then 
                 Parser.Tool.Loop <| TextCursor.pop packet.parser tc  
               else                                                                                                 
-                -- Parser.Tool.Loop <| TextCursor.pop tc 
                 Parser.Tool.Done tc
    
-
--- advance = Parser.Tool.text (\c -> c /= '.') (\c -> c /= '.' ) 
 
 
 notDelimiter c = not (List.member c ['[', ']'])

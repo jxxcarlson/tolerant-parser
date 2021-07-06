@@ -9,7 +9,7 @@ import Maybe.Extra
 import Parser.AST as AST exposing (Element(..), Name(..))
 import Parser.Advanced as Parser exposing ((|.), (|=))
 import Parser.Error exposing (Context(..), Problem(..))
-import Parser.Loc2 as Loc exposing (Position)
+import Parser.Loc as Loc exposing (Position)
 import Parser.MetaData as MetaData exposing (MetaData)
 import Parser.RawString as RawString
 import Parser.Tool as T

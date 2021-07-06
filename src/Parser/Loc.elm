@@ -1,78 +1,32 @@
-module Parser.Loc exposing
-    ( Loc
-    , Location
-    , Position
-    , dummy
-    , end
-    , locate
-    , location
-    , map
-    , start
-    , value
-    )
+module Parser.Loc exposing (Position, dummy, positionOfList)
 
 
 type alias Position =
-    { line : Int
-    , column : Int
-    }
+    { start : Int, end : Int }
 
 
-type alias Location =
-    { start : Position
-    , end : Position
-    }
-
-
-dummy : Location
 dummy =
-    { start = { line = 0, column = 0 }, end = { line = 0, column = 0 } }
+    { start = -1, end = -1 }
 
 
-type alias Loc a =
-    ( Location, a )
+positionOfList : List Position -> Position
+positionOfList positions =
+    let
+        sorted =
+            List.sortBy (\pos -> pos.start) positions
+
+        first =
+            List.head sorted |> Maybe.map .start |> Maybe.withDefault 0
+
+        last =
+            List.head (List.reverse sorted) |> Maybe.map .end |> Maybe.withDefault 0
+    in
+    { start = first, end = last }
 
 
-locate : Position -> Position -> a -> Loc a
-locate startLoc endLoc x =
-    ( { start = startLoc, end = endLoc }, x )
+data =
+    [ { start = 0, end = 3 }, { start = 4, end = 5 }, { start = 6, end = 9 } ]
 
 
-map : (a -> b) -> Loc a -> Loc b
-map f ( l, x ) =
-    ( l, f x )
-
-
-location : Loc a -> Location
-location ( l, _ ) =
-    l
-
-
-value : Loc a -> a
-value ( _, x ) =
-    x
-
-
-start : Loc a -> Position
-start ( l, _ ) =
-    l.start
-
-
-end : Loc a -> Position
-end ( l, _ ) =
-    l.end
-
-
-todoDummyPosition : Position
-todoDummyPosition =
-    { line = -1, column = -1 }
-
-
-todoDummyLocation : Location
-todoDummyLocation =
-    { start = todoDummyPosition, end = todoDummyPosition }
-
-
-todoDummyLocate : a -> Loc a
-todoDummyLocate =
-    locate todoDummyPosition todoDummyPosition
+data2 =
+    [ { start = 4, end = 5 }, { start = 0, end = 3 }, { start = 6, end = 9 } ]
