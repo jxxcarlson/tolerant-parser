@@ -202,9 +202,15 @@ pop parse tc =
 
 
 commit :  TextCursor -> TextCursor
-commit tc =
+commit tc = 
+  tc |> commit_ |> (\tc2 ->  {tc2 | parsed = List.reverse tc2.parsed })
+
+ 
+commit_:  TextCursor -> TextCursor
+commit_ tc =
     let
-        _ = Debug.log "!" ("COMMIT " ++ String.fromInt tc.count)
+
+        
 
         parsed =
             if tc.text == "" then
@@ -213,10 +219,12 @@ commit tc =
             else
                 (AST.Raw tc.text Parser.MetaData.dummy):: ( tc.parsed)
 
+        _ = parsed |> List.map AST.simplify 
+
     in
     case tc.stack of
         [] ->
-            {tc | parsed = parsed  }
+            {tc | parsed = parsed  } 
 
         top :: restOfStack ->
             let

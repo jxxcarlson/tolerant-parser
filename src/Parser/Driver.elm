@@ -29,6 +29,8 @@ pl str =
         tc =
             parseLoop 0 str
 
+        _ =  tc.parsed |> List.map AST.simplify |> Debug.log "COMMIT"
+
         _ =
             Debug.log "FINAL OFFSET" tc.offset
     in
