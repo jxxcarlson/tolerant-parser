@@ -25,6 +25,7 @@ is a data structure which includes the parsed source text.
 parseLoop : Packet Element -> Int -> String -> TextCursor
 parseLoop packet generation str =
     Parser.Tool.loop (TextCursor.init generation str) (nextCursor packet)
+      |> TextCursor.commit
 
 
 {-| nextCursor operates by running the expression parser on
@@ -58,9 +59,9 @@ nextCursor packet tc =
         _ = Debug.log ("TC "  ++ String.fromInt tc.count) {p = p, s = tc.stack |> List.map simplifyStackItem, t = tc.text}
         _ = Debug.log "-" "-------------------------------------------------"
     in
-    if tc.offset >= tc.length || tc.count > 20 then
-        -- TODO: that usage of count needs to be removed after bug is fixed
-        Parser.Tool.Done { tc | parsed = List.reverse tc.parsed }
+    if tc.offset >= tc.length  then
+        Parser.Tool.Done tc
+
 
     else
       let

@@ -1,4 +1,4 @@
-module Parser.Driver exposing (..)
+module Parser.Driver exposing (parseLoop, pl)
 
 import Parser.AST as AST exposing (Element(..))
 import Parser.Advanced as PA
@@ -33,7 +33,7 @@ pl str =
             Debug.log "FINAL OFFSET" tc.offset
     in
     --tc |> .parsed |> List.map AST.simplify
-    tc |> TextCursor.commit |> List.map AST.simplify
+    tc |> .parsed |> List.map AST.simplify
 
 
 

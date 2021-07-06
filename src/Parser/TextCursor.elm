@@ -160,22 +160,63 @@ pop parse tc =
                
 
 
-commit :  TextCursor -> List Element
+-- commit :  TextCursor -> List Element
+-- commit tc =
+--     let
+--         _ = Debug.log "!" ("COMMIT " ++ String.fromInt tc.count)
+
+--         parsed =
+--             if tc.text == "" then
+--                  tc.parsed 
+
+--             else
+--                 (AST.Raw tc.text Parser.MetaData.dummy):: ( tc.parsed)
+
+--     in
+--     case tc.stack of
+--         [] ->
+--             parsed |> Debug.log "COMMIT 1"
+
+--         top :: restOfStack ->
+--             let
+--                 -- problem =
+--                 --     Problem.AnnotationDoesNotFinish
+--                 --         { startMark = startMark
+--                 --         , expectedEndMark = expectedEndMark
+--                 --         , end = position offset end
+--                 --         }
+                
+
+--                 _ = Debug.log "AT END, STACK SIZE" (1 + List.length restOfStack)
+--                 _ = Debug.log "TOP OF STACK" top
+--                 _ = Debug.log "PARSED" (tc.parsed |> List.map AST.simplify)
+
+--                 newParsed =
+--                     AST.Incomplete :: parsed  ++ top.preceding 
+--             in
+--             commit { tc | count = 1 + tc.count, text = ""
+--                 , stack = restOfStack
+--                 , parsed = newParsed } 
+--                 |> Debug.log "COMMIT 2"
+
+
+
+commit :  TextCursor -> TextCursor
 commit tc =
     let
-        _ = Debug.log "!" "COMMIT"
+        _ = Debug.log "!" ("COMMIT " ++ String.fromInt tc.count)
 
         parsed =
             if tc.text == "" then
-                tc.parsed 
+                 tc.parsed 
 
             else
-                (AST.Raw tc.text Parser.MetaData.dummy):: (List.reverse tc.parsed)
+                (AST.Raw tc.text Parser.MetaData.dummy):: ( tc.parsed)
 
     in
     case tc.stack of
         [] ->
-            List.reverse parsed
+            {tc | parsed = parsed  }
 
         top :: restOfStack ->
             let
@@ -185,11 +226,18 @@ commit tc =
                 --         , expectedEndMark = expectedEndMark
                 --         , end = position offset end
                 --         }
+                
+
+                _ = Debug.log "AT END, STACK SIZE" (1 + List.length restOfStack)
+                _ = Debug.log "TOP OF STACK" top
+                _ = Debug.log "PARSED" (tc.parsed |> List.map AST.simplify)
 
                 newParsed =
                     AST.Incomplete :: parsed  ++ top.preceding 
             in
-            commit { tc | text = "", stack = restOfStack, parsed = newParsed }
+            commit { tc | count = 1 + tc.count, text = ""
+                , stack = restOfStack
+                , parsed = newParsed } 
 
 
 -- type alias StackItem = {expect : Expectation, preceding : List Element, count : Int}

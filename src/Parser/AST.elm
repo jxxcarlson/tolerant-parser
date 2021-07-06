@@ -1,4 +1,4 @@
-module Parser.AST exposing (..)
+module Parser.AST exposing (Element(..), Element_(..), simplify, Name(..), position, length)
 
 import Parser.Advanced as Parser
 import Parser.Error exposing (..)
