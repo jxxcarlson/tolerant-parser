@@ -1,11 +1,10 @@
-module Parser.Loop exposing (Packet, parseLoop, advance)
+module Parser.Loop exposing (Packet, advance, parseLoop)
 
-import Parser.AST as AST exposing (Element)
+import Parser.AST as AST exposing (Element, simplify)
 import Parser.Advanced as Parser exposing ((|.), (|=))
 import Parser.Error exposing (Context, Problem)
 import Parser.TextCursor as TextCursor exposing (TextCursor)
 import Parser.Tool
-import Parser.AST exposing (simplify)
 
 
 type alias Parser a =
@@ -13,7 +12,7 @@ type alias Parser a =
 
 
 type alias Packet a =
-    { parser : String ->  a
+    { parser : String -> a
     , getLength : a -> Int
     , handleError : Maybe (List (Parser.DeadEnd Context Problem) -> TextCursor -> TextCursor)
     }
@@ -26,7 +25,7 @@ is a data structure which includes the parsed source text.
 parseLoop : Packet Element -> Int -> String -> TextCursor
 parseLoop packet generation str =
     Parser.Tool.loop (TextCursor.init generation str) (nextCursor packet)
-      |> TextCursor.commit
+        |> TextCursor.commit
 
 
 {-| nextCursor operates by running the expression parser on
@@ -52,44 +51,68 @@ operated by parseLoop is updated:
     - `expr` is prepended to `tc.parsed`
 
 -}
-nextCursor : Packet Element -> TextCursor -> Parser.Tool.Step (TextCursor) (TextCursor)
+nextCursor : Packet Element -> TextCursor -> Parser.Tool.Step TextCursor TextCursor
 nextCursor packet tc =
     let
-        p = tc.parsed |> List.map AST.simplify
-        co  = tc.complete |> List.map AST.simplify
-        _ = Debug.log "(count, offset, remaining)" (tc.count, tc.offset, String.dropLeft tc.offset tc.source)
-        _ = Debug.log ("TC "  ++ String.fromInt tc.count) {p = p, c = co, s = tc.stack |> List.map TextCursor.simpleStackItem, t = tc.text}
-        _ = Debug.log "-" "-------------------------------------------------"
+        p =
+            tc.parsed |> List.map AST.simplify
+
+        co =
+            tc.complete |> List.map AST.simplify
+
+        _ =
+            Debug.log "(count, offset, remaining)" ( tc.count, tc.offset, String.dropLeft tc.offset tc.remainingSource )
+
+        _ =
+            Debug.log ("TC " ++ String.fromInt tc.count) { p = p, c = co, s = tc.stack |> List.map TextCursor.simpleStackItem, t = tc.text }
+
+        _ =
+            Debug.log "-" "-------------------------------------------------"
     in
-    if tc.offset >= tc.length  then
+    if tc.offset >= tc.length then
         Parser.Tool.Done tc
 
-
     else
-      let
-         remaining = String.dropLeft tc.offset tc.source
-         chompedText = advance remaining 
-         n = chompedText.finish - chompedText.start
-         firstChar = String.uncons remaining |> Maybe.map Tuple.first
-         
-       in
-       if n > 0 then
-         Parser.Tool.Loop <| TextCursor.add chompedText.content tc
-       else
-         case firstChar of
-            Nothing -> Parser.Tool.Done tc
-            Just c -> 
-              if c == '[' then
-                Parser.Tool.Loop <| TextCursor.push packet.parser {begin = '[', end = ']'} tc  
-              else if c == ']' then 
-                Parser.Tool.Loop <| TextCursor.pop packet.parser tc  
-              else                                                                                                 
-                Parser.Tool.Done tc
-   
+        let
+            remaining =
+                String.dropLeft tc.offset tc.remainingSource
+
+            chompedText =
+                advance remaining
+
+            n =
+                chompedText.finish - chompedText.start
+
+            firstChar =
+                String.uncons remaining |> Maybe.map Tuple.first
+        in
+        if n > 0 then
+            Parser.Tool.Loop <| TextCursor.add chompedText.content tc
+
+        else
+            case firstChar of
+                Nothing ->
+                    Parser.Tool.Done tc
+
+                Just c ->
+                    if c == '[' then
+                        Parser.Tool.Loop <| TextCursor.push packet.parser { begin = '[', end = ']' } tc
+
+                    else if c == ']' then
+                        Parser.Tool.Loop <| TextCursor.pop packet.parser tc
+
+                    else
+                        Parser.Tool.Done tc
 
 
-notDelimiter c = not (List.member c ['[', ']'])
-advance str = 
-  case Parser.run (Parser.Tool.text (\c -> notDelimiter c) (\c -> notDelimiter c )) str of
-     Ok stringData -> stringData
-     Err _ ->  {content = "", finish = 0, start = 0}
+notDelimiter c =
+    not (List.member c [ '[', ']' ])
+
+
+advance str =
+    case Parser.run (Parser.Tool.text (\c -> notDelimiter c) (\c -> notDelimiter c)) str of
+        Ok stringData ->
+            stringData
+
+        Err _ ->
+            { content = "", finish = 0, start = 0 }

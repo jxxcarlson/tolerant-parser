@@ -29,7 +29,8 @@ pl str =
         tc =
             parseLoop 0 str
 
-        _ =  tc.complete |> List.map AST.simplify |> Debug.log "COMPLETE (PL)"
+        _ =
+            tc.complete |> List.map AST.simplify |> Debug.log "COMPLETE (PL)"
 
         _ =
             Debug.log "FINAL OFFSET" tc.offset
