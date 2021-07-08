@@ -40,6 +40,19 @@ renderElementDict =
     Dict.fromList
         [ ( "i", italic )
         , ( "b", bold )
+        , ( "strike", strike )
+        , ( "underline", underline )
+        , ( "hide", hide )
+        , ( "highlight", highlight )
+        , ( "highlightRGB", highlight )
+
+        --, ( "fontRGB", fontRGB )
+        --, ( "red", red )
+        --, ( "blue", blue )
+        --, ( "violet", violet )
+        --, ( "medgray", medgray )
+        --, ( "code", renderCode )
+        --, ( "c", renderCode )
         , ( "math", renderMath )
         , ( "m", renderMath )
         , ( "mathblock", renderMathDisplay )
@@ -92,6 +105,10 @@ renderWithDictionary renderArgs name args body =
                 ]
 
 
+
+-- TEXT STYLE
+
+
 italic : FRender msg
 italic renderArgs _ _ body =
     el [ Font.italic ] (render renderArgs body)
@@ -100,6 +117,47 @@ italic renderArgs _ _ body =
 bold : FRender msg
 bold renderArgs _ _ body =
     el [ Font.bold ] (render renderArgs body)
+
+
+strike : FRender msg
+strike renderArgs _ _ body =
+    el [ Font.strike ] (render renderArgs body)
+
+
+underline : FRender msg
+underline renderArgs _ _ body =
+    el [ Font.underline ] (render renderArgs body)
+
+
+hide : FRender msg
+hide renderArgs _ _ body =
+    E.none
+
+
+highlight : FRender msg
+highlight renderArgs _ _ body =
+    el [ Background.color yellowColor, E.paddingXY 4 2 ] (render renderArgs body)
+
+
+
+--fontRGB : FRender msg
+--fontRGB renderArgs _ _ body =
+--    let
+--        args =
+--            getText body |> Maybe.withDefault "nada" |> String.words
+--
+--        toInt x =
+--            String.toInt x |> Maybe.withDefault 0
+--
+--        {r } =
+--            case args of
+--                r_ :: g_ :: b_ :: rest ->
+--                    ( toInt r_, toInt g_, toInt b_ )
+--
+--                _ ->
+--                    ( 0, 0, 0 )
+--    in
+--    el [ Font.color (E.rgb255 r g b), E.paddingXY 4 2 ] (render renderArgs body)
 
 
 link : FRender msg
@@ -123,10 +181,6 @@ link renderArgs name args body =
         { url = url
         , label = el [ Font.color linkColor, Font.italic ] (text label)
         }
-
-
-linkColor =
-    E.rgb 0 0 0.8
 
 
 image : FRender msg
@@ -200,10 +254,6 @@ type DisplayMode
     | DisplayMathMode
 
 
-redColor =
-    E.rgb 0.7 0 0
-
-
 renderMathDisplay : FRender msg
 renderMathDisplay rendArgs name args body =
     case getText body of
@@ -264,3 +314,44 @@ getText element =
 
         _ ->
             Nothing
+
+
+
+-- COLORS
+
+
+linkColor =
+    E.rgb 0 0 0.8
+
+
+blackColor =
+    E.rgb 0 0 0
+
+
+medGray =
+    E.rgb 0.4 0.4 0.4
+
+
+redColor =
+    E.rgb 0.7 0 0
+
+
+blueColor =
+    E.rgb 0 0 0.8
+
+
+darkBlueColor =
+    E.rgb 0 0 0.6
+
+
+yellowColor =
+    E.rgb 1.0 1.0 0
+
+
+violetColor =
+    E.rgb 0.4 0 0.8
+
+
+codeColor =
+    -- E.rgb 0.2 0.5 1.0
+    E.rgb 0.4 0 0.8
