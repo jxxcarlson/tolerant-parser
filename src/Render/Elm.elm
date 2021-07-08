@@ -13,6 +13,7 @@ import Parser.AST exposing (Element(..), Element_(..), Name(..))
 import Parser.Advanced
 import Parser.Driver
 import Parser.Error exposing (Context(..), Problem(..))
+import Parser.MetaData as MetaData
 import Utility
 
 
@@ -80,7 +81,7 @@ render renderArgs element =
             E.el [] (text <| "Undefined element")
 
         EList elements _ ->
-            E.paragraph [ E.width (px 600) ] (List.map (render renderArgs) elements)
+            E.paragraph [] (List.map (render renderArgs) elements)
 
         Problem _ str ->
             el [] (text <| "PROBLEM: " ++ str)
@@ -142,27 +143,88 @@ highlight renderArgs _ _ body =
 fontRGB : FRender msg
 fontRGB renderArgs _ _ body =
     let
-        args : List Element
-        args =
-            Parser.AST.body body |> Debug.log "ARGS"
-    in
-    case args of
-        r :: g :: b :: rest ->
-            fontRGB_ renderArgs r g b rest
+        getText_ element =
+            case element of
+                Raw s _ ->
+                    s
 
-        _ ->
-            el [ Font.color redColor ] (text "Error too few arguments to fontRGB")
+                _ ->
+                    ""
 
-
-fontRGB_ renderArgs r_ g_ b_ rest =
-    let
         toInt x =
-            x |> getText |> Maybe.withDefault "0" |> String.toInt |> Maybe.withDefault 0
+            x |> String.toInt |> Maybe.withDefault 0
 
-        ( r, g, b ) =
-            Utility.mapTriple toInt ( r_, g_, b_ )
+        getInt e =
+            e |> Debug.log "E" |> getText_ |> Debug.log "GE" |> toInt
+
+        args2 =
+            case body of
+                EList list _ ->
+                    case list of
+                        (Raw r_ _) :: (Raw g_ _) :: (Raw b_ _) :: rest_ ->
+                            Just { r = toInt r_, g = toInt g_, b = toInt b_, rest = rest_ }
+
+                        ((Raw str _) as raw) :: ((Element _ _ _ _) as elt) :: rest ->
+                            let
+                                aa =
+                                    convertString str
+
+                                phrase =
+                                    String.words str |> List.drop 3 |> String.join " "
+                            in
+                            case aa of
+                                Just a ->
+                                    Just
+                                        { r = a.r
+                                        , g = a.g
+                                        , b = a.b
+                                        , rest = Raw phrase MetaData.dummy :: elt :: rest
+                                        }
+
+                                Nothing ->
+                                    Nothing
+
+                        _ ->
+                            Nothing
+
+                _ ->
+                    Nothing
+
+        convertString str =
+            case String.words str of
+                r :: g :: b :: rest ->
+                    Just
+                        { r = String.toInt r |> Maybe.withDefault 0
+                        , g = String.toInt g |> Maybe.withDefault 0
+                        , b = String.toInt b |> Maybe.withDefault 0
+                        , rest = [ Raw (String.join " " rest) MetaData.dummy ]
+                        }
+
+                _ ->
+                    Nothing
+
+        args1 =
+            convertString (getText body |> Maybe.withDefault "none")
+
+        _ =
+            Debug.log "(args1, args2)" ( args1, args2 )
     in
-    paragraph [ Font.color (E.rgb255 r g b), E.paddingXY 4 2 ] (List.map (render renderArgs) rest)
+    case ( args1, args2 ) of
+        ( Nothing, Nothing ) ->
+            el [ Font.color redColor ] (text "Error: bad or too few arguments to fontRGB")
+
+        ( Just args, Nothing ) ->
+            fontRGB_ renderArgs args
+
+        ( Nothing, Just args ) ->
+            fontRGB_ renderArgs args
+
+        ( Just _, Just _ ) ->
+            el [ Font.color redColor ] (text "Error: I can't explain this one.")
+
+
+fontRGB_ renderArgs arg =
+    paragraph [ Font.color (E.rgb255 arg.r arg.g arg.b), E.paddingXY 4 2 ] (List.map (render renderArgs) (Debug.log "REST" arg.rest))
 
 
 link : FRender msg
