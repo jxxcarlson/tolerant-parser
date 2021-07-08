@@ -2,7 +2,7 @@ module ParseLoopTests exposing (..)
 
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
-import Parser.AST exposing (Element_(..), Name(..))
+import Parser.AST exposing (Element_(..), Name(..), simplify)
 import Parser.Driver exposing (pl)
 import Test exposing (..)
 
@@ -65,8 +65,15 @@ suite =
                     |> pl
                     |> Expect.equal
                         [ Raw_ "abc\n ", Element_ (Name "x") [] (EList_ [ Element_ (Name "i") [] (EList_ [ Raw_ "a" ]), Element_ (Name "j") [] (EList_ [ Raw_ "b" ]) ]), Raw_ " \n\ndef" ]
+        , test "fontRGB" <|
+            \_ ->
+                "[fontRGB 255 0 255 foo [b bar]]"
+                    |> pl
+                    |> Expect.equal
+                        [ Element_ (Name "fontRGB") [] (EList_ [ Raw_ "255 ", Raw_ "0 ", Raw_ "255 ", Raw_ "foo ", Element_ (Name "b") [] (EList_ [ Raw_ "bar" ]) ]) ]
         ]
 
 
 
+-- [fontRGB 255 0 255 foo [b bar]]
 -- [[Raw_ (" ghi jkl"),Element_ (Name "foo") [] (EList_ []),Raw_ ("abc def ")]
