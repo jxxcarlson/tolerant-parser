@@ -3,6 +3,7 @@ module Utility exposing
     , entities
     , keyValueDict
     , liftToMaybe
+    , mapTriple
     , roundTo
     )
 
@@ -61,3 +62,7 @@ liftToMaybe f =
 
             Just a_ ->
                 Just (f a_)
+
+
+mapTriple f ( a, b, c ) =
+    ( f a, f b, f c )

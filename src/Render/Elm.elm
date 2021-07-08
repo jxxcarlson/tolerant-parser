@@ -45,8 +45,8 @@ renderElementDict =
         , ( "hide", hide )
         , ( "highlight", highlight )
         , ( "highlightRGB", highlight )
+        , ( "fontRGB", fontRGB )
 
-        --, ( "fontRGB", fontRGB )
         --, ( "red", red )
         --, ( "blue", blue )
         --, ( "violet", violet )
@@ -139,25 +139,30 @@ highlight renderArgs _ _ body =
     el [ Background.color yellowColor, E.paddingXY 4 2 ] (render renderArgs body)
 
 
+fontRGB : FRender msg
+fontRGB renderArgs _ _ body =
+    let
+        args : List Element
+        args =
+            Parser.AST.body body |> Debug.log "ARGS"
+    in
+    case args of
+        r :: g :: b :: rest ->
+            fontRGB_ renderArgs r g b rest
 
---fontRGB : FRender msg
---fontRGB renderArgs _ _ body =
---    let
---        args =
---            getText body |> Maybe.withDefault "nada" |> String.words
---
---        toInt x =
---            String.toInt x |> Maybe.withDefault 0
---
---        {r } =
---            case args of
---                r_ :: g_ :: b_ :: rest ->
---                    ( toInt r_, toInt g_, toInt b_ )
---
---                _ ->
---                    ( 0, 0, 0 )
---    in
---    el [ Font.color (E.rgb255 r g b), E.paddingXY 4 2 ] (render renderArgs body)
+        _ ->
+            el [ Font.color redColor ] (text "Error too few arguments to fontRGB")
+
+
+fontRGB_ renderArgs r_ g_ b_ rest =
+    let
+        toInt x =
+            x |> getText |> Maybe.withDefault "0" |> String.toInt |> Maybe.withDefault 0
+
+        ( r, g, b ) =
+            Utility.mapTriple toInt ( r_, g_, b_ )
+    in
+    paragraph [ Font.color (E.rgb255 r g b), E.paddingXY 4 2 ] (List.map (render renderArgs) rest)
 
 
 link : FRender msg

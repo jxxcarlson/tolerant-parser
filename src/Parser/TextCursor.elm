@@ -179,66 +179,73 @@ pop parse tc =
 
         Just item ->
             if tc.text /= "" then
-                let
-                    newParsed =
-                        String.fromChar item.expect.begin
-                            ++ tc.text
-                            ++ String.fromChar item.expect.end
-                            |> parse
-
-                    parsed =
-                        newParsed :: tc.parsed
-
-                    stack =
-                        List.drop 1 tc.stack
-                in
-                if stack == [] then
-                    { tc
-                        | offset = tc.offset + 1
-                        , count = tc.count + 1
-                        , parsed = []
-                        , stack = []
-                        , complete = parsed ++ tc.complete
-                        , text = ""
-                    }
-
-                else
-                    { tc
-                        | offset = tc.offset + 1
-                        , count = tc.count + 1
-                        , parsed = parsed
-                        , stack = stack
-                        , text = ""
-                    }
+                handleNonEmptyText parse tc item
 
             else
-                -- tc.text is empty
-                case List.head tc.stack of
-                    Nothing ->
-                        { tc | count = tc.count + 1, offset = tc.offset + 1 }
+                handleEmptyText parse tc item
 
-                    Just stackItem ->
-                        let
-                            ( name, args_ ) =
-                                stackItem.data |> String.words |> List.Extra.uncons |> Maybe.withDefault ( "fname", [] )
 
-                            args =
-                                List.map (\a -> Raw a Parser.MetaData.dummy) args_
+handleNonEmptyText parse tc item =
+    let
+        newParsed =
+            String.fromChar item.expect.begin
+                ++ tc.text
+                ++ String.fromChar item.expect.end
+                |> parse
 
-                            newParsed =
-                                Element (AST.Name name)
-                                    []
-                                    (EList (args ++ List.reverse tc.parsed) Parser.MetaData.dummy)
-                                    Parser.MetaData.dummy
-                        in
-                        { tc
-                            | parsed = []
-                            , complete = newParsed :: tc.complete
-                            , stack = List.drop 1 tc.stack
-                            , offset = tc.offset + 1
-                            , count = tc.count + 1
-                            , text = ""
-                        }
+        parsed =
+            newParsed :: tc.parsed
+
+        stack =
+            List.drop 1 tc.stack
+    in
+    if stack == [] then
+        { tc
+            | offset = tc.offset + 1
+            , count = tc.count + 1
+            , parsed = []
+            , stack = []
+            , complete = parsed ++ tc.complete
+            , text = ""
+        }
+
+    else
+        { tc
+            | offset = tc.offset + 1
+            , count = tc.count + 1
+            , parsed = parsed
+            , stack = stack
+            , text = ""
+        }
+
+
+handleEmptyText parse tc item =
+    case List.head tc.stack of
+        Nothing ->
+            { tc | count = tc.count + 1, offset = tc.offset + 1 }
+
+        Just stackItem ->
+            let
+                ( name, args_ ) =
+                    stackItem.data |> String.words |> List.Extra.uncons |> Maybe.withDefault ( "fname", [] )
+
+                args =
+                    List.map (\a -> Raw a Parser.MetaData.dummy) args_
+
+                newParsed =
+                    Element (AST.Name name)
+                        []
+                        (EList (args ++ List.reverse tc.parsed) Parser.MetaData.dummy)
+                        Parser.MetaData.dummy
+            in
+            { tc
+                | parsed = []
+                , complete = newParsed :: tc.complete
+                , stack = List.drop 1 tc.stack
+                , offset = tc.offset + 1
+                , count = tc.count + 1
+                , text = ""
+            }
 
 
 commit : TextCursor -> TextCursor

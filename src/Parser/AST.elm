@@ -1,4 +1,4 @@
-module Parser.AST exposing (Element(..), Element_(..), Name(..), length, position, simplify)
+module Parser.AST exposing (Element(..), Element_(..), Name(..), body, body_, length, position, simplify)
 
 import Parser.Advanced as Parser
 import Parser.Error exposing (..)
@@ -13,6 +13,26 @@ type Element
     | Problem (List ParseError) String
     | StackError Int Int String String --- errorTextStart errorTextEnd message errorText
     | Empty
+
+
+body : Element -> List Element
+body element =
+    case element of
+        Element _ _ (EList list _) _ ->
+            list
+
+        _ ->
+            []
+
+
+body_ : Element_ -> List Element_
+body_ element =
+    case element of
+        Element_ _ _ (EList_ list) ->
+            list
+
+        _ ->
+            []
 
 
 type alias ParseError =
