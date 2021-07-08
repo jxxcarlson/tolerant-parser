@@ -5,6 +5,10 @@ import Element as E exposing (column, el, fill, paragraph, px, rgb255, row, spac
 import Element.Background as Background
 import Element.Font as Font
 import Element.Input as Input
+import Html exposing (Html)
+import Html.Attributes as HA
+import Html.Keyed
+import Json.Encode
 import Parser.AST exposing (Element(..), Element_(..), Name(..))
 import Parser.Advanced
 import Parser.Driver
@@ -35,6 +39,10 @@ renderElementDict =
     Dict.fromList
         [ ( "i", italic )
         , ( "b", bold )
+        , ( "math", renderMath )
+        , ( "m", renderMath )
+        , ( "mathblock", renderMathDisplay )
+        , ( "mb", renderMathDisplay )
         ]
 
 
@@ -89,3 +97,74 @@ italic renderArgs _ _ body =
 bold : FRender msg
 bold renderArgs _ _ body =
     el [ Font.bold ] (render renderArgs body)
+
+
+type DisplayMode
+    = InlineMathMode
+    | DisplayMathMode
+
+
+redColor =
+    E.rgb 0.7 0 0
+
+
+renderMathDisplay : FRender msg
+renderMathDisplay rendArgs name args body =
+    case getText body of
+        Just content ->
+            mathText rendArgs DisplayMathMode content
+
+        Nothing ->
+            el [ Font.color redColor ] (text "Error rendering math !!!")
+
+
+renderMath : FRender msg
+renderMath renderArgs name args body =
+    case getText body of
+        Just content ->
+            mathText renderArgs InlineMathMode content
+
+        Nothing ->
+            el [ Font.color redColor ] (text "Error rendering math !!!")
+
+
+mathText : RenderArgs -> DisplayMode -> String -> E.Element msg
+mathText renderArgs displayMode content =
+    Html.Keyed.node "span"
+        []
+        [ ( String.fromInt renderArgs.generation, mathText_ displayMode renderArgs.selectedId content )
+        ]
+        |> E.html
+
+
+mathText_ : DisplayMode -> String -> String -> Html msg
+mathText_ displayMode selectedId content =
+    Html.node "math-text"
+        -- active meta selectedId  ++
+        [ HA.property "display" (Json.Encode.bool (isDisplayMathMode displayMode))
+        , HA.property "content" (Json.Encode.string content)
+
+        -- , clicker meta
+        -- , HA.id (makeId meta)
+        ]
+        []
+
+
+isDisplayMathMode : DisplayMode -> Bool
+isDisplayMathMode displayMode =
+    case displayMode of
+        InlineMathMode ->
+            False
+
+        DisplayMathMode ->
+            True
+
+
+getText : Element -> Maybe String
+getText element =
+    case element of
+        EList [ Raw content _ ] _ ->
+            Just content
+
+        _ ->
+            Nothing

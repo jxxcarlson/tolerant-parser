@@ -63,10 +63,10 @@ render k str =
 
 
 renderDocument : Int -> String -> List (List (Element Msg))
-renderDocument k document =
+renderDocument generation document =
     document
-        |> Parser.Document.parse k
-        |> List.map (\para -> Render.Elm.renderList renderArgs para)
+        |> Parser.Document.parse generation
+        |> List.map (\para -> Render.Elm.renderList { renderArgs | generation = generation } para)
 
 
 renderArgs =
