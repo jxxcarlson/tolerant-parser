@@ -1,4 +1,4 @@
-module Parser.Driver exposing (parseLoop, pl)
+module Parser.Driver exposing (parse, parseLoop, pl)
 
 import Parser.AST as AST exposing (Element(..))
 import Parser.Advanced as PA
@@ -21,6 +21,13 @@ packet =
 parseLoop : Int -> String -> TextCursor
 parseLoop generation str =
     Loop.parseLoop packet generation str
+
+
+parse : Int -> String -> List Element
+parse generation str =
+    str
+        |> parseLoop generation
+        |> .complete
 
 
 pl : String -> List AST.Element_

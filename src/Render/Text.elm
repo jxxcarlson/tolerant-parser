@@ -1,4 +1,4 @@
-module Parser.Print exposing (normalize, print, printList_, print_, rt, rt_)
+module Render.Text exposing (normalize, print, printList_, print_, rt, rt_)
 
 import Parser.AST exposing (Element(..), Element_(..), Name(..))
 import Parser.Advanced
