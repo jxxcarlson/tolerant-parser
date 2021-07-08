@@ -13,6 +13,7 @@ import Parser.AST exposing (Element(..), Element_(..), Name(..))
 import Parser.Advanced
 import Parser.Driver
 import Parser.Error exposing (Context(..), Problem(..))
+import Utility
 
 
 type alias ParseError =
@@ -43,6 +44,8 @@ renderElementDict =
         , ( "m", renderMath )
         , ( "mathblock", renderMathDisplay )
         , ( "mb", renderMathDisplay )
+        , ( "link", link )
+        , ( "image", image )
         ]
 
 
@@ -97,6 +100,99 @@ italic renderArgs _ _ body =
 bold : FRender msg
 bold renderArgs _ _ body =
     el [ Font.bold ] (render renderArgs body)
+
+
+link : FRender msg
+link renderArgs name args body =
+    let
+        bodyText =
+            getText body |> Maybe.withDefault "missing url"
+
+        ( label, url ) =
+            case String.words bodyText of
+                label_ :: url_ :: rest ->
+                    ( label_, url_ )
+
+                url_ :: [] ->
+                    ( url_, url_ )
+
+                [] ->
+                    ( "no label", "https://nowhere.com" )
+    in
+    E.newTabLink []
+        { url = url
+        , label = el [ Font.color linkColor, Font.italic ] (text label)
+        }
+
+
+linkColor =
+    E.rgb 0 0 0.8
+
+
+image : FRender msg
+image renderArgs name _ body =
+    let
+        args_ =
+            getText body |> Maybe.withDefault "" |> String.words
+
+        args =
+            List.take (List.length args_ - 1) args_
+
+        url =
+            List.head (List.reverse args_) |> Maybe.withDefault "no-image"
+
+        dict =
+            Utility.keyValueDict args
+
+        description =
+            Dict.get "caption" dict |> Maybe.withDefault ""
+
+        caption =
+            case Dict.get "caption" dict of
+                Nothing ->
+                    E.none
+
+                Just c ->
+                    E.row [ placement, E.width E.fill ] [ el [ E.width E.fill ] (text c) ]
+
+        width =
+            case Dict.get "width" dict of
+                Nothing ->
+                    px displayWidth
+
+                Just w_ ->
+                    case String.toInt w_ of
+                        Nothing ->
+                            px displayWidth
+
+                        Just w ->
+                            E.px w
+
+        placement =
+            case Dict.get "placement" dict of
+                Nothing ->
+                    E.centerX
+
+                Just "left" ->
+                    E.alignLeft
+
+                Just "right" ->
+                    E.alignRight
+
+                Just "center" ->
+                    E.centerX
+
+                _ ->
+                    E.centerX
+
+        displayWidth =
+            renderArgs.width
+    in
+    E.column [ spacing 8, E.width (E.px displayWidth), placement ]
+        [ E.image [ E.width width, placement ]
+            { src = url, description = description }
+        , caption
+        ]
 
 
 type DisplayMode

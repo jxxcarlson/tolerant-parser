@@ -275,7 +275,7 @@ commit_ tc =
 
                 --- more here
                 errorMessage =
-                    StackError top.offset tc.offset "((expecting a ']' somewhere in the highlighted text))" (String.slice top.offset tc.offset tc.source)
+                    StackError top.offset tc.offset "((expecting ']' somewhere in the highlighted text))" (String.slice top.offset tc.offset tc.source)
 
                 trailingElement =
                     Parser.parse tc.generation tc.text
