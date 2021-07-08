@@ -10,6 +10,7 @@ module Parser.TextCursor exposing
 -}
 
 import Html exposing (a)
+import List.Extra
 import Parser.AST as AST exposing (Element(..), simplify)
 import Parser.MetaData exposing (MetaData)
 import Parser.Parser as Parser
@@ -218,10 +219,16 @@ pop parse tc =
 
                     Just stackItem ->
                         let
+                            ( name, args_ ) =
+                                stackItem.data |> String.words |> List.Extra.uncons |> Maybe.withDefault ( "fname", [] )
+
+                            args =
+                                List.map (\a -> Raw a Parser.MetaData.dummy) args_
+
                             newParsed =
-                                Element (AST.Name stackItem.data)
+                                Element (AST.Name name)
                                     []
-                                    (EList (List.reverse tc.parsed) Parser.MetaData.dummy)
+                                    (EList (args ++ List.reverse tc.parsed) Parser.MetaData.dummy)
                                     Parser.MetaData.dummy
                         in
                         { tc
