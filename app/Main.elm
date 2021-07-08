@@ -71,7 +71,7 @@ renderDocument generation document =
 
 renderArgs =
     { width = 450
-    , selectedId = "foo"
+    , selectedId = "foobar"
     , generation = 0
     }
 

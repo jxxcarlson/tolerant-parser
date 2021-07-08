@@ -189,23 +189,31 @@ handleNonEmptyText : (String -> Element) -> StackItem -> TextCursor -> TextCurso
 handleNonEmptyText parse stackTop tc =
     let
         top =
-            String.fromChar stackTop.expect.begin
-                ++ stackTop.data
-                ++ String.fromChar stackTop.expect.end
-                |> parse
+            if stackTop.data == "" then
+                Raw (tc.text ++ " ") Parser.MetaData.dummy
+
+            else
+                String.fromChar stackTop.expect.begin
+                    ++ stackTop.data
+                    ++ String.fromChar stackTop.expect.end
+                    |> parse
 
         txt =
-            String.fromChar stackTop.expect.begin
-                ++ tc.text
-                ++ String.fromChar stackTop.expect.end
-                |> parse
+            if stackTop.data /= "" then
+                Raw (tc.text ++ " ") Parser.MetaData.dummy
+
+            else
+                String.fromChar stackTop.expect.begin
+                    ++ tc.text
+                    ++ String.fromChar stackTop.expect.end
+                    |> parse
 
         parsed =
             if stackTop.data == "" then
                 txt :: tc.parsed
 
             else
-                txt :: [ AST.join top tc.parsed ]
+                [ AST.join top (List.reverse <| txt :: tc.parsed) ]
 
         stack =
             List.drop 1 tc.stack
@@ -242,7 +250,7 @@ handleEmptyText parse stackTop tc =
                     stackItem.data |> String.words |> List.Extra.uncons |> Maybe.withDefault ( "fname", [] )
 
                 args =
-                    List.map (\a -> Raw a Parser.MetaData.dummy) args_
+                    List.map (\a -> Raw (a ++ " ") Parser.MetaData.dummy) args_
 
                 newParsed =
                     Element (AST.Name name)

@@ -1,4 +1,4 @@
-module Render.Elm exposing (render, renderList)
+module Render.Elm exposing (convertString, render, renderList)
 
 import Dict exposing (Dict)
 import Element as E exposing (column, el, fill, paragraph, px, rgb255, row, spacing, text)
@@ -143,73 +143,16 @@ highlight renderArgs _ _ body =
 fontRGB : FRender msg
 fontRGB renderArgs _ _ body =
     let
-        getText_ element =
-            case element of
-                Raw s _ ->
-                    s
+        args2_ =
+            args2 body
 
-                _ ->
-                    ""
-
-        toInt x =
-            x |> String.toInt |> Maybe.withDefault 0
-
-        getInt e =
-            e |> Debug.log "E" |> getText_ |> Debug.log "GE" |> toInt
-
-        args2 =
-            case body of
-                EList list _ ->
-                    case list of
-                        (Raw r_ _) :: (Raw g_ _) :: (Raw b_ _) :: rest_ ->
-                            Just { r = toInt r_, g = toInt g_, b = toInt b_, rest = rest_ }
-
-                        ((Raw str _) as raw) :: ((Element _ _ _ _) as elt) :: rest ->
-                            let
-                                aa =
-                                    convertString str
-
-                                phrase =
-                                    String.words str |> List.drop 3 |> String.join " "
-                            in
-                            case aa of
-                                Just a ->
-                                    Just
-                                        { r = a.r
-                                        , g = a.g
-                                        , b = a.b
-                                        , rest = Raw phrase MetaData.dummy :: elt :: rest
-                                        }
-
-                                Nothing ->
-                                    Nothing
-
-                        _ ->
-                            Nothing
-
-                _ ->
-                    Nothing
-
-        convertString str =
-            case String.words str of
-                r :: g :: b :: rest ->
-                    Just
-                        { r = String.toInt r |> Maybe.withDefault 0
-                        , g = String.toInt g |> Maybe.withDefault 0
-                        , b = String.toInt b |> Maybe.withDefault 0
-                        , rest = [ Raw (String.join " " rest) MetaData.dummy ]
-                        }
-
-                _ ->
-                    Nothing
-
-        args1 =
+        args1_ =
             convertString (getText body |> Maybe.withDefault "none")
 
         _ =
-            Debug.log "(args1, args2)" ( args1, args2 )
+            Debug.log "(args1, args2)" ( args1_, args2_ )
     in
-    case ( args1, args2 ) of
+    case ( args1_, args2_ ) of
         ( Nothing, Nothing ) ->
             el [ Font.color redColor ] (text "Error: bad or too few arguments to fontRGB")
 
@@ -219,12 +162,17 @@ fontRGB renderArgs _ _ body =
         ( Nothing, Just args ) ->
             fontRGB_ renderArgs args
 
+        -- el [ Font.color redColor ] (text "Error: I can't explain this one.")
         ( Just _, Just _ ) ->
             el [ Font.color redColor ] (text "Error: I can't explain this one.")
 
 
-fontRGB_ renderArgs arg =
-    paragraph [ Font.color (E.rgb255 arg.r arg.g arg.b), E.paddingXY 4 2 ] (List.map (render renderArgs) (Debug.log "REST" arg.rest))
+fontRGB_ renderArgs args =
+    let
+        _ =
+            Debug.log "fontRGB_ args" args
+    in
+    paragraph [ Font.color (E.rgb255 args.r args.g args.b), E.paddingXY 4 2 ] (List.map (render renderArgs) (Debug.log "REST!!" args.rest))
 
 
 link : FRender msg
@@ -371,6 +319,86 @@ isDisplayMathMode displayMode =
 
         DisplayMathMode ->
             True
+
+
+
+-- HELPERS
+
+
+args2 : Element -> Maybe { r : Int, g : Int, b : Int, rest : List Element }
+args2 body =
+    let
+        _ =
+            body |> Parser.AST.simplify |> Debug.log "ARGS2, BODY"
+    in
+    case body of
+        EList list _ ->
+            case list of
+                (Raw r_ _) :: (Raw g_ _) :: (Raw b_ _) :: rest_ ->
+                    Just { r = toInt r_, g = toInt g_, b = toInt b_, rest = rest_ }
+
+                ((Raw str _) as raw) :: ((Element _ _ _ _) as elt) :: rest ->
+                    let
+                        aa =
+                            convertString str
+
+                        phrase =
+                            String.words str |> List.drop 3 |> String.join " "
+                    in
+                    case aa of
+                        Just a ->
+                            Just
+                                { r = a.r
+                                , g = a.g
+                                , b = a.b
+                                , rest = Raw phrase MetaData.dummy :: elt :: rest
+
+                                --, rest = elt :: rest
+                                }
+
+                        Nothing ->
+                            Nothing
+
+                _ ->
+                    Nothing
+
+        _ ->
+            Nothing
+
+
+convertString : String -> Maybe { r : Int, g : Int, b : Int, rest : List Element }
+convertString str =
+    case String.words str of
+        r :: g :: b :: rest ->
+            Just
+                { r = String.toInt r |> Maybe.withDefault 0
+                , g = String.toInt g |> Maybe.withDefault 0
+                , b = String.toInt b |> Maybe.withDefault 0
+                , rest = [ Raw (String.join " " rest) MetaData.dummy ]
+                }
+
+        _ ->
+            Nothing
+
+
+toInt : String -> Int
+toInt x =
+    x |> String.trim |> String.toInt |> Maybe.withDefault 0
+
+
+getInt : Element -> Int
+getInt e =
+    e |> Debug.log "E" |> getText2 |> Debug.log "GE" |> toInt
+
+
+getText2 : Element -> String
+getText2 element =
+    case element of
+        Raw s _ ->
+            s
+
+        _ ->
+            ""
 
 
 getText : Element -> Maybe String

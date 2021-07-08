@@ -12,6 +12,8 @@ This [i is] a [b real test! Lorem ipsum dolor sit amet, consectetur adipiscing e
 
 [fontRGB 255 0 255 foo]
 
+[fontRGB 255 0 255 foo [b bar]]
+
 [link NYT https://nytimes.com]
 
 [link https://washingtonpost.com]
