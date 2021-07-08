@@ -144,7 +144,7 @@ push parse expectation tc =
             { tc
                 | count = tc.count + 1
                 , offset = tc.offset + 1
-                , stack = { expect = expectation, data = tc.text, count = tc.count, offset = tc.offset } :: tc.stack
+                , stack = { expect = expectation, data = "", count = tc.count, offset = tc.offset } :: tc.stack
                 , parsed = []
                 , complete = complete |> Debug.log "PUSH, COMPLETE"
                 , text = ""
@@ -177,24 +177,35 @@ pop parse tc =
         Nothing ->
             { tc | count = tc.count + 1, offset = tc.offset + 1 }
 
-        Just item ->
+        Just stackTop ->
             if tc.text /= "" then
-                handleNonEmptyText parse tc item
+                handleNonEmptyText parse stackTop tc
 
             else
-                handleEmptyText parse tc item
+                handleEmptyText parse stackTop tc
 
 
-handleNonEmptyText parse tc item =
+handleNonEmptyText : (String -> Element) -> StackItem -> TextCursor -> TextCursor
+handleNonEmptyText parse stackTop tc =
     let
-        newParsed =
-            String.fromChar item.expect.begin
+        top =
+            String.fromChar stackTop.expect.begin
+                ++ stackTop.data
+                ++ String.fromChar stackTop.expect.end
+                |> parse
+
+        txt =
+            String.fromChar stackTop.expect.begin
                 ++ tc.text
-                ++ String.fromChar item.expect.end
+                ++ String.fromChar stackTop.expect.end
                 |> parse
 
         parsed =
-            newParsed :: tc.parsed
+            if stackTop.data == "" then
+                txt :: tc.parsed
+
+            else
+                txt :: [ AST.join top tc.parsed ]
 
         stack =
             List.drop 1 tc.stack
@@ -219,7 +230,8 @@ handleNonEmptyText parse tc item =
         }
 
 
-handleEmptyText parse tc item =
+handleEmptyText : (String -> Element) -> StackItem -> TextCursor -> TextCursor
+handleEmptyText parse stackTop tc =
     case List.head tc.stack of
         Nothing ->
             { tc | count = tc.count + 1, offset = tc.offset + 1 }

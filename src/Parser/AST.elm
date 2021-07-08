@@ -1,4 +1,4 @@
-module Parser.AST exposing (Element(..), Element_(..), Name(..), body, body_, length, position, simplify)
+module Parser.AST exposing (Element(..), Element_(..), Name(..), body, body_, join, length, position, simplify)
 
 import Parser.Advanced as Parser
 import Parser.Error exposing (..)
@@ -13,6 +13,16 @@ type Element
     | Problem (List ParseError) String
     | StackError Int Int String String --- errorTextStart errorTextEnd message errorText
     | Empty
+
+
+join : Element -> List Element -> Element
+join el list =
+    case el of
+        Element name args (EList list1 _) meta ->
+            Element name args (EList (list1 ++ list) Parser.MetaData.dummy) meta
+
+        _ ->
+            el
 
 
 body : Element -> List Element
