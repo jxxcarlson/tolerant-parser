@@ -246,17 +246,23 @@ handleEmptyText parse stackTop tc =
 
         Just stackItem ->
             let
-                ( name, args_ ) =
+                ( fname, args_ ) =
                     stackItem.data |> String.words |> List.Extra.uncons |> Maybe.withDefault ( "fname", [] )
 
                 args =
                     List.map (\a -> Raw (a ++ " ") Parser.MetaData.dummy) args_
 
                 newParsed =
-                    Element (AST.Name name)
+                    Element (AST.Name fname)
                         []
                         (EList (args ++ List.reverse tc.parsed) Parser.MetaData.dummy)
                         Parser.MetaData.dummy
+
+                _ =
+                    newParsed |> AST.simplify |> Debug.log "NEW PARSED"
+
+                _ =
+                    args ++ List.reverse tc.parsed |> List.map AST.simplify |> Debug.log "args ++ reversed from tc"
             in
             { tc
                 | parsed = []

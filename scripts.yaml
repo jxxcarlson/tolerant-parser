@@ -1,6 +1,7 @@
 scripts:
 
   cloc: cloc --by-file src
+  cloc-parser: cloc --by-file src/Parser
 
   complexity: npx elm-review --template jfmengels/elm-review-cognitive-complexity/example --rules CognitiveComplexity
 
