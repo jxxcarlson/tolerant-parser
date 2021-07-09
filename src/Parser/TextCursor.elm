@@ -178,6 +178,11 @@ push parse expectation tc =
 
 pop : (String -> Element) -> TextCursor -> TextCursor
 pop parse tc =
+    -- The cursors' offset is pointing at a character that
+    -- signal the end of an element, e.g., ']' in the
+    -- case of language L1.  It is time to pop the stack
+    -- and update the cursor.  We split this operation into
+    -- two case, depending on whether cursor.text is empty.
     let
         _ =
             Debug.log "!" "POP"
@@ -196,6 +201,9 @@ pop parse tc =
 
 handleNonEmptyText : (String -> Element) -> StackItem -> TextCursor -> TextCursor
 handleNonEmptyText parse stackTop tc =
+    -- cursor.text is nonempty.  We proceed as follows, where 'stackTop'
+    -- is the item on the top of the stack.
+    -- (a)
     let
         top =
             if stackTop.data == "" then
@@ -208,14 +216,14 @@ handleNonEmptyText parse stackTop tc =
                     |> parse
 
         txt =
-            if stackTop.data /= "" then
-                Raw (tc.text ++ " ") Parser.MetaData.dummy
-
-            else
+            if stackTop.data == "" then
                 String.fromChar stackTop.expect.begin
                     ++ tc.text
                     ++ String.fromChar stackTop.expect.end
                     |> parse
+
+            else
+                Raw (tc.text ++ " ") Parser.MetaData.dummy
 
         parsed =
             if stackTop.data == "" then
