@@ -76,7 +76,7 @@ suite =
                 "[fontRGB 255 0 255 [i This text is in [b magenta]]]"
                     |> pl
                     |> Expect.equal
-                        [ Element_ (Name "fontRGB") [] (EList_ [ Raw_ "255 ", Raw_ "0 ", Raw_ "255 " ]), Element_ (Name "i") [] (EList_ [ Raw_ "This ", Raw_ "text ", Raw_ "is ", Raw_ "in ", Element_ (Name "b") [] (EList_ [ Raw_ "magenta" ]) ]) ]
+                        [ Element_ (Name "fontRGB") [] (EList_ [ Raw_ "255 ", Raw_ "0 ", Raw_ "255 ", Element_ (Name "i") [] (EList_ [ Raw_ "This ", Raw_ "text ", Raw_ "is ", Raw_ "in ", Element_ (Name "b") [] (EList_ [ Raw_ "magenta" ]) ]) ]) ]
         ]
 
 

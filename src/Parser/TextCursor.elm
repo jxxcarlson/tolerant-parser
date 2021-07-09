@@ -265,8 +265,9 @@ handleEmptyText parse stackTop tc =
                     args ++ List.reverse tc.parsed |> List.map AST.simplify |> Debug.log "args ++ reversed from tc"
             in
             { tc
-                | parsed = []
-                , complete = newParsed :: tc.complete
+                | parsed = [ newParsed ]
+
+                --, complete = newParsed :: tc.complete
                 , stack = List.drop 1 tc.stack
                 , offset = tc.offset + 1
                 , count = tc.count + 1
