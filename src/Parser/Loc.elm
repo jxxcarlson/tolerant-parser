@@ -1,5 +1,8 @@
 module Parser.Loc exposing (Position, dummy, positionOfList)
 
+{-| Used to identify a piece of text in the source
+-}
+
 
 type alias Position =
     { start : Int, end : Int }
@@ -22,11 +25,3 @@ positionOfList positions =
             List.head (List.reverse sorted) |> Maybe.map .end |> Maybe.withDefault 0
     in
     { start = first, end = last }
-
-
-data =
-    [ { start = 0, end = 3 }, { start = 4, end = 5 }, { start = 6, end = 9 } ]
-
-
-data2 =
-    [ { start = 4, end = 5 }, { start = 0, end = 3 }, { start = 6, end = 9 } ]

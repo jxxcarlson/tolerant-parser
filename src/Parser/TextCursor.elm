@@ -16,12 +16,7 @@ import Parser.MetaData exposing (MetaData)
 import Parser.Parser as Parser
 
 
-{-| SourceText structure used by Parser.Loop.run as it progressively "eats" bites of
-the text, accumulating the parsed bites in the list `parsed: List Expression`.
-The `offset` represents the position of beginning of the current `text` in the
-original text. It is used to properly construct Expressions, which contain
-as a component a SourceMap, which locates the bite of text in the original input
-text.
+{-| TODO: give an account of what these fields do
 -}
 type alias TextCursor =
     { count : Int
@@ -39,8 +34,8 @@ type alias TextCursor =
     }
 
 
-
--- summary : TextCursor Element -> { text : b, block : c, parsed : List (List Element.SimpleElement), stack : d }
+type alias StackItem =
+    { expect : Expectation, data : String, count : Int, offset : Int }
 
 
 type alias ParseError =
@@ -77,7 +72,7 @@ empty =
     }
 
 
-{-| Return a TextCursor with given chunkNumber and text
+{-| initialize with source text
 -}
 init : Int -> String -> TextCursor
 init generation source =
@@ -96,10 +91,8 @@ init generation source =
     }
 
 
-type alias StackItem =
-    { expect : Expectation, data : String, count : Int, offset : Int }
-
-
+{-| for testing by humans
+-}
 simpleStackItem : StackItem -> String
 simpleStackItem { data, offset } =
     "Offset " ++ String.fromInt offset ++ ": " ++ data
@@ -109,6 +102,8 @@ type alias Expectation =
     { begin : Char, end : Char }
 
 
+{-| Add text to the .text field
+-}
 add : String -> TextCursor -> TextCursor
 add str tc =
     let
@@ -122,6 +117,8 @@ add str tc =
     }
 
 
+{-| A
+-}
 push : (String -> Element) -> Expectation -> TextCursor -> TextCursor
 push parse expectation tc =
     let
@@ -130,6 +127,13 @@ push parse expectation tc =
     in
     case tc.stack of
         [] ->
+            -- The stack is empty, so we prepare for a new element:
+            -- (a) parse tc.text, prepend it to tc.parsed and tc.complete
+            -- (b) clear tc.text and tc.text
+            -- (c) push a stackItem onto the stack, recording the start
+            --     character, the expected end character if any, and
+            --     the string data, which in this case is empty
+            -- (d) increment the offset
             let
                 complete =
                     if tc.text /= "" then
@@ -150,19 +154,24 @@ push parse expectation tc =
                 , text = ""
             }
 
-        first :: rest ->
+        top :: rest ->
+            -- The stack has at least one element, 'top'
+            -- (a) if the cursor holds text, put in the data field of 'top'
+            -- (b) set the text field to empty
+            -- (c) push an empty stackItem
+            -- (d) increment the offset
             let
-                first_ =
+                top_ =
                     if String.trim tc.text == "" then
-                        first
+                        top
 
                     else
-                        { first | data = tc.text }
+                        { top | data = tc.text }
             in
             { tc
                 | count = tc.count + 1
                 , offset = tc.offset + 1
-                , stack = { expect = expectation, data = "", count = tc.count, offset = tc.offset } :: first_ :: rest
+                , stack = { expect = expectation, data = "", count = tc.count, offset = tc.offset } :: top_ :: rest
                 , text = ""
             }
 
@@ -330,7 +339,4 @@ commit_ tc =
                     , complete =
                         List.reverse tc.complete
                             ++ [ errorMessage ]
-
-                    --:: List.reverse tc.parsed
-                    -- :: newParsed :: tc.parsed ++ [ trailingElement ]
                 }

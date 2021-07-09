@@ -18,9 +18,10 @@ type alias Packet a =
     }
 
 
-{-| parseLoop takes as input an integer representing a "chunkOffset" and
-a string of source text, the "chunk." It returns a TextCursor, which
-is a data structure which includes the parsed source text.
+{-| parseLoop scans the source text from right to left, update the TextCursor
+on each pass. See module Parser.TextCursor for definitions. The TextCursor
+is initialized with source text. When parseLoop concludes, it also carries
+the AST of the processed source.
 -}
 parseLoop : Packet Element -> Int -> String -> TextCursor
 parseLoop packet generation str =
@@ -28,32 +29,23 @@ parseLoop packet generation str =
         |> TextCursor.commit
 
 
-{-| nextCursor operates by running the expression parser on
-`tc.text` with argument `tc.chunkNumber`. This argument is used
-to track the location in the source text of the piece of text
-parsed.
+{-| nextCursor operates by advancing from one syntactic mark to another, e.g.,
+'[' or ']' in the case of language L1. On each move it updates the cursor
+with one of four TextCursor functions: `add`, `push`, `pop`, 'commit'.
 
-Recall that parseLoop is fed chunks of text by
-Document.process. These chunks are "logical paragraphs,"
-which one may think of as forming an array of strings indexed
-by chunkNumber. A piece of text within a chunk is identified
-by an offset and a length:
+The offset field of the text cursor points the character in source
+field that is currently being scanned. As a convenience, tc.remaining
+holds the source text from the offset onwards.
 
-    piece =
-        String.slice offset (offset + length) chunk
-
-If parsing succeeds, resulting in a parsand `expr`, the textCursor
-operated by parseLoop is updated:
-
-    - the "program counter" tc.count is incremented
-    - the piece of text corresponding to the parsand
-      is removed from tc.text
-    - `expr` is prepended to `tc.parsed`
+The offset must be incremented by at least one unit on each pass so
+that parseLoop is guaranteed to terminate. The program terminates
+when the offset comes to the end of the source.
 
 -}
 nextCursor : Packet Element -> TextCursor -> Parser.Tool.Step TextCursor TextCursor
 nextCursor packet tc =
     let
+        -- TODO: All the stuff in this let block is diagnostic code and will be removed
         p =
             tc.parsed |> List.map AST.simplify
 
@@ -75,9 +67,12 @@ nextCursor packet tc =
     else
         let
             remaining =
+                -- offset has been updated, so remaining should be also
                 String.dropLeft tc.offset tc.remainingSource
 
             chompedText =
+                -- get some more text
+                -- this means text from one mark to the next
                 advance remaining
 
             n =
@@ -87,9 +82,11 @@ nextCursor packet tc =
                 String.uncons remaining |> Maybe.map Tuple.first
         in
         if n > 0 then
+            -- the chompedText is non-void; addit it to the cursor
             Parser.Tool.Loop <| TextCursor.add chompedText.content tc
 
         else
+            -- We are at a mark, and so must decide whether to push, pop, or call it quits.
             case firstChar of
                 Nothing ->
                     Parser.Tool.Done tc
@@ -105,10 +102,12 @@ nextCursor packet tc =
                         Parser.Tool.Done tc
 
 
+notDelimiter : Char -> Bool
 notDelimiter c =
     not (List.member c [ '[', ']' ])
 
 
+advance : String -> Parser.Tool.StringData
 advance str =
     case Parser.run (Parser.Tool.text (\c -> notDelimiter c) (\c -> notDelimiter c)) str of
         Ok stringData ->

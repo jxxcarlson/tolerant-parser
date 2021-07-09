@@ -4,14 +4,18 @@ import Parser.AST exposing (Element)
 import Parser.Driver
 
 
-parse : Int -> String -> List (List Element)
-parse generation str =
-    str
+type alias Document =
+    String
+
+
+parse : Int -> Document -> List (List Element)
+parse generation doc =
+    doc
         |> split
         |> List.map (Parser.Driver.parse generation)
 
 
-split : String -> List String
-split str =
-    String.split "\n\n" str
+split : Document -> List String
+split doc =
+    String.split "\n\n" doc
         |> List.filter (\s -> s /= "")

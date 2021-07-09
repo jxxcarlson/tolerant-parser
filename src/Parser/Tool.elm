@@ -1,5 +1,6 @@
 module Parser.Tool exposing
     ( Step(..)
+    , StringData
     , between
     , char
     , first
@@ -13,7 +14,6 @@ module Parser.Tool exposing
     , optionalList
     , second
     , text
-
     )
 
 import Parser.Advanced as Parser exposing ((|.), (|=))
@@ -22,6 +22,10 @@ import Parser.Error exposing (Context(..), Problem(..))
 
 type alias Parser a =
     Parser.Parser Context Problem a
+
+
+type alias StringData =
+    { start : Int, finish : Int, content : String }
 
 
 {-| Apply a parser zero or more times and return a list of the results.

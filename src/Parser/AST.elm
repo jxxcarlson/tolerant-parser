@@ -15,36 +15,6 @@ type Element
     | Empty
 
 
-join : Element -> List Element -> Element
-join el list =
-    case el of
-        Element name args (EList list1 _) meta ->
-            Element name args (EList (list1 ++ list) Parser.MetaData.dummy) meta
-
-        _ ->
-            el
-
-
-body : Element -> List Element
-body element =
-    case element of
-        Element _ _ (EList list _) _ ->
-            list
-
-        _ ->
-            []
-
-
-body_ : Element_ -> List Element_
-body_ element =
-    case element of
-        Element_ _ _ (EList_ list) ->
-            list
-
-        _ ->
-            []
-
-
 type alias ParseError =
     Parser.DeadEnd Context Problem
 
@@ -54,6 +24,8 @@ type Name
     | Undefined
 
 
+{-| A simplified version of the AST for humans
+-}
 type Element_
     = Raw_ String
     | Element_ Name (List String) Element_
@@ -114,3 +86,37 @@ simplify element =
 
         Empty ->
             Incomplete_
+
+
+
+-- UTILITIES
+
+
+join : Element -> List Element -> Element
+join el list =
+    case el of
+        Element name args (EList list1 _) meta ->
+            Element name args (EList (list1 ++ list) Parser.MetaData.dummy) meta
+
+        _ ->
+            el
+
+
+body : Element -> List Element
+body element =
+    case element of
+        Element _ _ (EList list _) _ ->
+            list
+
+        _ ->
+            []
+
+
+body_ : Element_ -> List Element_
+body_ element =
+    case element of
+        Element_ _ _ (EList_ list) ->
+            list
+
+        _ ->
+            []

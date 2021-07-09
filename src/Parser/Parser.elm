@@ -1,16 +1,9 @@
-module Parser.Parser exposing (..)
+module Parser.Parser exposing (parse, parseList, parseSimple)
 
-{-
-
-
--}
-
-import Maybe.Extra
 import Parser.AST as AST exposing (Element(..), Name(..))
 import Parser.Advanced as Parser exposing ((|.), (|=))
 import Parser.Error exposing (Context(..), Problem(..))
 import Parser.Loc as Loc exposing (Position)
-import Parser.MetaData as MetaData exposing (MetaData)
 import Parser.RawString as RawString
 import Parser.Tool as T
 import Parser.XString as XString
@@ -28,21 +21,8 @@ type alias ParseError =
     Parser.DeadEnd Context Problem
 
 
-type CYTMsg
-    = Mark2Msg
-    | CYDocumentLink String
-
-
 
 -- PARSER
-
-
-p =
-    parse 0
-
-
-p2 =
-    p >> AST.simplify
 
 
 parse : Int -> String -> Element
@@ -53,6 +33,10 @@ parse generation str =
 
         Err errors ->
             Problem errors str
+
+
+parseSimple =
+    parse 0 >> AST.simplify
 
 
 parseList : Int -> Int -> String -> Result (List ParseError) (List Element)
@@ -82,7 +66,6 @@ parser generation =
 primitiveElement : Int -> Parser Element
 primitiveElement generation =
     Parser.inContext CElement <|
-        -- Parser.succeed (\start name ( args, body_ ) end source -> Element name args body_ (Just { generation = generation, blockOffset = blockOffset, offset = start, length = end - start }))
         -- TODO: is this correct?
         Parser.succeed (\start name ( args, body_ ) end source -> Element name args body_ (meta generation start end))
             |= Parser.getOffset
@@ -111,11 +94,6 @@ elementArgs =
 
 innerElementArgs =
     T.manySeparatedBy comma (string [ ',', '|' ])
-
-
-
--- elementBody : Int -> Parser.Parser Context Problem Element
--- elementBody : Int -> Parser.Parser Context Problem (MetaData -> Element)
 
 
 metaOfList generation list =
@@ -195,10 +173,6 @@ textWithPredicate predicate generation =
         )
 
 
-type alias StringData =
-    { content : String, start : Int, finish : Int }
-
-
 string stopChars =
     T.first (string_ stopChars) Parser.spaces
 
@@ -243,32 +217,3 @@ leftBracket =
 
 rightBracket =
     Parser.symbol (Parser.Token "]" ExpectingRightBracket)
-
-
-
---{-|
---
---    Use this to parse a string and return information about its location in the source
---
----}
---
--- getChompedString : Int -> Int -> Parser a -> ( Parser String, MetaData )
---
---
---getChompedString generation offset parser_ =
---    let
---        sm first_ last_ source_ =
---            let
---                src =
---                    String.slice first_ last_ source_
---            in
---            -- ( src, Just { blockOffset = lineNumber, length = last_, offset = 0, generation = generation } )
---            -- TODO: is the below correct?
---            ( src, MetaData.init generation offset)
---    in
---    Parser.succeed sm
---        |= Parser.getOffset
---        |. parser_
---        |= Parser.getOffset
---        |= Parser.getSource
-

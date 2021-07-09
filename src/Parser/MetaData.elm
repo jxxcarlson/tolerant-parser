@@ -1,4 +1,4 @@
-module Parser.MetaData exposing (..)
+module Parser.MetaData exposing (MetaData, dummy, meta)
 
 import Parser.Loc as Loc
 
@@ -13,11 +13,3 @@ meta generation start end =
 
 dummy =
     { position = { start = 0, end = 0 }, generation = 0 }
-
-
-
---init generation offset =
---    { offset = offset
---    , generation = generation
---    , location = { start = { line = 0, column = 0 }, finish = { line = 0, column = 0 } }
---    }

@@ -30,6 +30,8 @@ parse generation str =
         |> .complete
 
 
+{-| Used for testing
+-}
 pl : String -> List AST.Element_
 pl str =
     let
@@ -37,12 +39,8 @@ pl str =
             parseLoop 0 str
 
         _ =
-            tc.complete |> List.map AST.simplify |> Debug.log "COMPLETE (PL)"
-
-        _ =
             Debug.log "FINAL OFFSET" tc.offset
     in
-    --tc |> .parsed |> List.map AST.simplify
     tc |> .complete |> List.map AST.simplify
 
 
